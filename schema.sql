@@ -41,7 +41,8 @@ CREATE TABLE auction (
     current_highest_bid NUMERIC(10,2) NOT NULL DEFAULT 0 CHECK (current_highest_bid >= 0),
     auction_status VARCHAR(20) NOT NULL DEFAULT 'Active'
         CHECK (auction_status IN ('Active', 'Closed')),
-
+    start_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    end_time TIMESTAMP NOT NULL,
 
     winner_login VARCHAR(50),
     winner_role VARCHAR(10) DEFAULT 'Buyer' CHECK (winner_role = 'Buyer'),

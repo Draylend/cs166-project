@@ -1,19 +1,46 @@
 <!-- Item Page -->
 <!-- Display all items -->
-<!-- TODO: Display all info about items -->
+<!-- TODO: Add ordering/filtering -->
 
 {% extends "base.html" %}
 
 {% block content %}
     <!-- Display all items -->
     {% if results %}
-        <div class="grid">
-        <!-- Display all results in a grid -->
-        {% for item in results %}
-            <div class="card">
-                {{ item.item_name }} — {{ item.description }}
-            </div>
-        {% endfor %}
+        <div class="grid" style="margin-top: 5%;">
+            <!-- Display all results in a grid -->
+            {% for item in results %}
+                <div>
+                    <div class="card-header"></div>
+                    <div class="card">
+                        <div style="display: grid; grid-template-columns: 30% 1fr; gap: 15px;">
+                            <div style="display: flex; justify-content: center;">
+                                <!-- If there's an image -->
+                                {% if item.image_url %}
+                                    <img src="{{ item.image_url }}" style="max-width: 15vw; max-height: 15vw; border-radius: 10px;"></img>
+                                {% else %}
+                                    <p style="display: flex; justify-content: center; align-items: center; background-color: rgb(221, 221, 221); border-radius: 10px; min-width: 10vw; min-height: 10vw; padding: 15px;">No Image Available</p>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <p style="font-size: 32px; margin: 0px;">{{ item.item_name }}</p>
+                                
+                                <div style="display: flex; align-items: center; gap: 5px; color: rgb(112, 112, 112);">
+                                    <p style="font-size: 20px; margin: 0px;">{{ item.item_condition }}</p>
+                                    <p style="font-size: 20px; margin: 0px;">•</p>
+                                    <p style="font-size: 20px; margin: 0px;">{{ item.category }}</p> 
+                                </div>
+
+                                <p style="font-size: 32px; font-weight: bold; margin-top: 10px; margin-bottom: 0px;">${{ item.starting_price }}</p>
+                                
+                                <p style="font-size: 20px; margin-top: 10px; margin-bottom: 5px;">{{ item.seller_login }}</p>
+                                <p style="font-size: 16px; margin: 0px;">{{ item.description }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+            {% endfor %}
         </div>
     {% else %}
         <p>No items found.</p>

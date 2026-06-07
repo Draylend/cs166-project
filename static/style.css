@@ -1,0 +1,29 @@
+/* Reusable classes */
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+    gap: 15px;
+    margin-left: 20%;
+    margin-right: 20%;
+}
+
+.card-header {
+    background-color: #0148c2; 
+    height: 10px; 
+    border-radius: 15px 15px 0px 0px;
+    margin: 0px;
+}
+
+.card {
+    background-color: #fff5db;
+    box-shadow: 0px 3px 6px -1px rgba(0, 0, 0, 0.60);
+    border-radius: 0px 0px 15px 15px;
+    padding-top: 20px;
+    padding-left: 20px;
+    padding-right: 20px;
+    padding-bottom: 20px;
+    border-left: 3px solid #ffcb3d;
+    border-right: 3px solid #ffcb3d;
+    border-bottom: 3px solid #ffcb3d;
+}

@@ -8,7 +8,7 @@ FROM 'item.csv'
 DELIMITER ','
 CSV HEADER;
 
-COPY auction(auction_id, item_id, seller_login, seller_role, current_highest_bid, auction_status, winner_login, winner_role)
+COPY auction(auction_id, item_id, seller_login, seller_role, current_highest_bid, auction_status, start_time, end_time, winner_login, winner_role)
 FROM 'auction.csv'
 DELIMITER ','
 CSV HEADER;

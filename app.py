@@ -2,6 +2,8 @@
 
 from flask import Flask, render_template, request, redirect, session
 from database import get_db
+from decimal import Decimal
+from datetime import datetime   # Converting CSV timestamp into readable format
 
 import psycopg2
 import psycopg2.extras
@@ -149,7 +151,7 @@ def auctions():
     # Get database information (connection)
     conn = get_db()
     # Grab cursor (selector)
-    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     # Search for auctions whose name contains the query
     cur.execute("""
@@ -160,6 +162,44 @@ def auctions():
 
     # Get all matching results
     results = cur.fetchall()
+
+    # Add values to external values to return results
+    for auction in results:
+        auction["high_threshold"] = auction["starting_price"] * Decimal("1.3")
+
+        # Format timestamp
+        start_dt = auction["start_time"]
+        end_dt = auction["end_time"]
+
+        readable_start = start_dt.strftime("%b %d, %Y at %I:%M %p")
+        readable_end = end_dt.strftime("%b %d, %Y at %I:%M %p")
+
+        # Compute time remaining
+        end_time = auction["end_time"]
+        now = datetime.now()
+
+        remaining = end_time - now
+
+        # Format string
+        if remaining.total_seconds() <= 0:
+            time_left = None
+        else:
+            days = remaining.days
+            seconds = remaining.seconds
+            hours = seconds // 3600
+            minutes = (seconds % 3600) // 60
+
+            # Cleaner Formatting
+            if days > 0:
+                time_left = f"{days}d {hours}h remaining"
+            elif hours > 0:
+                time_left = f"{hours}h {minutes}m remaining"
+            else:
+                time_left = f"{minutes}m remaining"
+
+        auction["readable_start"] = readable_start
+        auction["readable_end"] = readable_end
+        auction["time_left"] = time_left
 
     # Close connection and cursor
     cur.close()
