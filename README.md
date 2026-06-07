@@ -2,6 +2,15 @@
 CS166 Final Project
 
 ## How to Run
+### Install Dependencies
+```
+pip install Flask
+```
+If the above doesn't work, try:
+```
+python3 -m pip install Flask
+```
+
 ### Start Database
 ```
 source createPostgreSQL.sh
