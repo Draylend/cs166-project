@@ -15,6 +15,12 @@ app.secret_key = "cs166"    # For verifying sessions
 def home():
     return render_template("index.html", title="Home Page")
 
+# Logging Users Out
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/")
+
 # Function for calling Sign-Up Page
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
@@ -100,22 +106,139 @@ def login():
 # Function for calling Dashboard Page
 @app.route("/dashboard")
 def dashboard():
-    return render_template("dashboard.html", title="Dashboard")
+    # Make sure user is logged in
+    if "login" not in session:
+        return redirect("/login")
+
+    # Grab user
+    username = session["login"]
+
+    # Get database information (connection)
+    conn = get_db()
+    # Grab cursor (selector)
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+    # Search for logged in user
+    cur.execute("""
+        SELECT login, role
+        FROM users
+        WHERE login = %s;
+    """, (username,))
+
+    # Grab data for logged in user
+    user = cur.fetchone()
+
+    # Close connection and cursor
+    cur.close()
+    conn.close()
+
+    # Return user info
+    return render_template(
+        "dashboard.html", 
+        title="Dashboard", 
+        user=user
+    )
 
 # Function for calling Auctions Page
 @app.route("/auctions")
 def auctions():
-    return render_template("auctions.html", title="Browse Auctions")
+    # Make sure user is logged in
+    if "login" not in session:
+        return redirect("/login")
+
+    # Get database information (connection)
+    conn = get_db()
+    # Grab cursor (selector)
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+    # Search for auctions whose name contains the query
+    cur.execute("""
+        SELECT *
+        FROM auction A, item I
+        WHERE A.item_id = I.item_id
+    """)
+
+    # Get all matching results
+    results = cur.fetchall()
+
+    # Close connection and cursor
+    cur.close()
+    conn.close()
+
+    # Return results
+    return render_template(
+        "auctions.html",
+        title="Browse Auctions",
+        results=results,
+    )
 
 # Function for calling Items Page
 @app.route("/items")
 def items():
-    return render_template("items.html", title="Browse Items")
+    # Make sure user is logged in
+    if "login" not in session:
+        return redirect("/login")
+        
+    # Get database information (connection)
+    conn = get_db()
+    # Grab cursor (selector)
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+    # Search for items whose name contains the query
+    cur.execute("""
+        SELECT *
+        FROM item
+    """)
+
+    # Get all matching results
+    results = cur.fetchall()
+
+    # Close connection and cursor
+    cur.close()
+    conn.close()
+
+    # Return results
+    return render_template(
+        "items.html",
+        title="Browse Items",
+        results=results,
+    )
 
 # Function for calling Profile Page
 @app.route("/profile")
 def profile():
-    return render_template("profile.html", title="Profile")
+    # Make sure user is logged in
+    if "login" not in session:
+        return redirect("/login")
+
+    # Grab user
+    username = session["login"]
+
+    # Get database information (connection)
+    conn = get_db()
+    # Grab cursor (selector)
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+    # Search for logged in user
+    cur.execute("""
+        SELECT *
+        FROM users
+        WHERE login = %s;
+    """, (username,))
+
+    # Grab data for logged in user
+    user = cur.fetchone()
+
+    # Close connection and cursor
+    cur.close()
+    conn.close()
+
+    # Return user info
+    return render_template(
+        "profile.html", 
+        title="View Profile", 
+        user=user
+    )
     
 # Function for calling Bid Page
 @app.route("/bid")
@@ -125,7 +248,38 @@ def bid():
 # Function for calling Shipment Page
 @app.route("/shipment")
 def shipment():
-    return render_template("shipment.html", title="Shipment")
+    # Make sure user is logged in
+    if "login" not in session:
+        return redirect("/login")
+
+    # Grab user
+    username = session["login"]
+
+    # Get database information (connection)
+    conn = get_db()
+    # Grab cursor (selector)
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+    # Search for logged in user
+    cur.execute("""
+        SELECT login, role
+        FROM users U, shipment S, auction A, item I
+        WHERE U.login = %s AND S.auction_id = A.auction_id AND U.login = A.winner_login AND A.item_id = I.item_id;
+    """, (username,))
+
+    # Grab data for logged in user
+    results = cur.fetchone()
+
+    # Close connection and cursor
+    cur.close()
+    conn.close()
+
+    # Return user info
+    return render_template(
+        "shipment.html", 
+        title="View Shipments", 
+        results=results
+    )
 
 # Function for calling ManageItems Page
 @app.route("/manageItems")
@@ -154,8 +308,8 @@ def search():
     # Search for items whose name contains the query
     cur.execute("""
         SELECT *
-        FROM auction A, item I
-        WHERE I.item_id = A.item_id AND item_name ILIKE %s;
+        FROM item I
+        WHERE item_name ILIKE %s;
     """, (f"%{query}%",))
 
     # Get all matching results

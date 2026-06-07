@@ -1,16 +1,9 @@
 <!-- Profile Page -->
 <!-- Interface for users to edit their informaiton -->
+<!-- TODO: Allow editing of details, restrict some fields based on role -->
 
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>{{ title }}</title>
-    </head>
-    <body>
-        <!-- Navbar Component -->
-        {% include "navbar.html" %}
-        
-        Profile Page
-    </body>
-</html>
+{% extends "base.html" %}
+
+{% block content %}
+    <p>{{ user.login }}'s Profile</p>
+{% endblock %}

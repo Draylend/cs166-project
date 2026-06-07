@@ -1,16 +1,21 @@
 <!-- Shipment Page -->
 <!-- Display information about a users shipments -->
+<!-- TODO: Add fields, coloring based on status -->
 
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>{{ title }}</title>
-    </head>
-    <body>
-        <!-- Navbar Component -->
-        {% include "navbar.html" %}
-        
-        Shipment Page
-    </body>
-</html>
+{% extends "base.html" %}
+
+{% block content %}
+    Shipment Page
+    {% if results %}
+        <div class="grid">
+        <!-- Display all results in a grid -->
+        {% for result in results %}
+            <div class="card">
+                {{ result.shipment_status }} — {{ result.item_name }}
+            </div>
+        {% endfor %}
+        </div>
+    {% else %}
+        <p>No shipments found.</p>
+    {% endif %}
+{% endblock %}

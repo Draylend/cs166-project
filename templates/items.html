@@ -1,16 +1,21 @@
 <!-- Item Page -->
 <!-- Display all items -->
+<!-- TODO: Display all info about items -->
 
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>{{ title }}</title>
-    </head>
-    <body>
-        <!-- Navbar Component -->
-        {% include "navbar.html" %}
-        
-        Item Page
-    </body>
-</html>
+{% extends "base.html" %}
+
+{% block content %}
+    <!-- Display all items -->
+    {% if results %}
+        <div class="grid">
+        <!-- Display all results in a grid -->
+        {% for item in results %}
+            <div class="card">
+                {{ item.item_name }} — {{ item.description }}
+            </div>
+        {% endfor %}
+        </div>
+    {% else %}
+        <p>No items found.</p>
+    {% endif %}
+{% endblock %}

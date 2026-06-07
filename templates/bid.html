@@ -1,16 +1,8 @@
 <!-- Bid Page -->
 <!-- Display information about the bid and allow bidding -->
 
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>{{ title }}</title>
-    </head>
-    <body>
-        <!-- Navbar Component -->
-        {% include "navbar.html" %}
-        
-        Bidding Page
-    </body>
-</html>
+{% extends "base.html" %}
+
+{% block content %}
+    <div>Bidding Page</div>
+{% endblock %}
