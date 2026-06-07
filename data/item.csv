@@ -1,0 +1,3 @@
+item_id,item_name,category,starting_price,image_url,item_condition,description,seller_login,seller_role
+0,Pink Hairbrush,Toiletry,5,,Good,An antique pink hairbrush,test2,Seller
+1,Barbie Doll,Toy,25,,Okay,A traditional Barbie doll,test2,Seller

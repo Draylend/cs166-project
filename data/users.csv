@@ -1,2 +1,4 @@
 login,password,phone_num,address,role,favorite_category
 test,1234,1234567890,1234 Test City,Buyer,Technology
+test2,5678,1234567890,5678 Test Town,Seller,
+test3,1111,1234567890,1111 Test Lake,Admin,Coconuts

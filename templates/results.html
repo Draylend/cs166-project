@@ -1,0 +1,54 @@
+<!-- Auction Page -->
+<!-- View all items/auctions for a given query -->
+<!-- TODO: 
+    - display elements in a grid with all details
+    - pressing will display an items details or auction details
+    - allow ordering (time, price, seller, auction type (if at all)) -->
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>{{ title }}</title>
+        <style>
+            /* For auctions */
+            .grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 20px;
+            }
+
+            .card {
+                border: 1px solid #ccc;
+                padding: 10px;
+            }
+        </style>
+    </head>
+    <body>
+        <!-- Navbar Component -->
+        {% include "navbar.html" %}
+
+        <h1 style="display: flex; justify-content: center; margin: 0px;">Auctions</h1>
+        <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh;">
+            <!-- Search Bar -->
+            <form action="/search" method="GET">
+                <input type="text" name="query" value="{{query}}">
+                <button type="submit">Search</button>
+            </form>
+
+            <p>Results for "{{ query }}"</p>
+            {% if results %}
+                <div class="grid">
+                <!-- Display all results in a grid -->
+                {% for item in results %}
+                    <div class="card">
+                        {{ item.item_name }} — {{ item.description }}
+                    </div>
+                {% endfor %}
+                </div>
+            {% else %}
+                <p>No items found.</p>
+            {% endif %}
+        </div>
+    </body>
+</html>

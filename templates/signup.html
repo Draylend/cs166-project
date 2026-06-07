@@ -1,0 +1,49 @@
+<!-- Sign Up Page -->
+<!-- Create login and password, pressing "Submit" sends form -->
+<!-- TODO: Input Validation -->
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>{{ title }}</title>
+    </head>
+    <body>
+        <h1 style="display: flex; justify-content: center; margin: 0px;">tBay Sign Up</h1>
+        <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh;">
+            <!-- Display error message for existing logins -->
+            <p style="color: red; height: 25px; margin: 0;">
+                {% if error %}{{ error }}{% endif %}
+            </p>
+            <!-- Submission Form -->
+            <form action="/signup" method="POST">
+                <label>Login:</label>
+                <input type="text" name="login" required>
+
+                <br><br>
+
+                <label>Password:</label>
+                <input type="password" name="password" required>
+
+                <br><br>
+
+                <label>Phone Number:</label>
+                <input type="number" name="phone" required>
+
+                <br><br>
+
+                <label>Address:</label>
+                <input type="text" name="address" required>
+
+                <br><br>
+
+                <label>Favorite Category:</label>
+                <input type="text" name="fav_category">
+
+                <br><br>
+
+                <button type="submit">Sign Up</button>
+            </form>
+        </div>
+    </body>
+</html>

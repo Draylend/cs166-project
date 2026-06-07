@@ -1,0 +1,2 @@
+auction_id,item_id,seller_login,seller_role,current_highest_bid,auction_status,winner_login,winner_role
+0,0,test2,Seller,0,Active,,
