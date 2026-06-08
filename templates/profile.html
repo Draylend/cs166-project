@@ -6,4 +6,7 @@
 
 {% block content %}
     <p>{{ user.login }}'s Profile</p>
+    {% if isHost %}
+        <p>This is the host!</p>
+    {% endif %}
 {% endblock %}

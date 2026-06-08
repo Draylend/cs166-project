@@ -1,0 +1,4 @@
+bid_id,auction_id,buyer_login,buyer_role,bid_amount,bid_timestamp
+0,2,buyer2,Buyer,73,2026-06-08 4:23:00
+1,2,buyer3,Buyer,45,2026-06-07 18:47:00
+2,1,buyer2,Buyer,90,2026-06-06 7:59:00

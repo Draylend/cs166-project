@@ -5,29 +5,36 @@
     - pressing will display an items details or auction details
     - allow ordering (time, price, seller, auction type (if at all)) -->
 
+{% from "macros/auction_list.html" import auction_list %}
+{% from "macros/item_list.html" import item_list %}
 {% extends "base.html" %}
 
 {% block content %}
-    <h1 style="display: flex; justify-content: center; margin: 0px;">Auctions</h1>
-    <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh;">
-        <!-- Search Bar -->
-        <form action="/search" method="GET">
-            <input type="text" name="query" value="{{query}}">
-            <button type="submit">Search</button>
+    <h1 style="display: flex; justify-content: center; margin-bottom: 0px; margin-top: 5%;">Auctions</h1>
+    <div style="display: flex; flex-direction: column; align-items: center; margin-top: 5%;">
+        <!-- Search Bar (searches by item name) -->
+        <form action="/search" method="GET" class="search-form">
+            <input type="text" name="query" value="{{ query }}" class="search-input">
+            <button type="submit" class="search-button">Search</button>
         </form>
 
-        <p>Results for "{{ query }}"</p>
+        <p style="font-size: 16px;">Results for "{{ query }}"</p>
+        <!-- Display all search results -->
         {% if results %}
             <div class="grid">
-            <!-- Display all results in a grid -->
-            {% for item in results %}
-                <div class="card">
-                    {{ item.item_name }} — {{ item.description }}
-                </div>
-            {% endfor %}
+                <!-- Display all results in a grid -->
+                {% for result in results %}
+                    <!-- If this is an auction, display as auction -->
+                    {% if result.auction_id %}
+                        {{ auction_list(result) }}
+                    <!-- Else, display as an item -->
+                    {% else %}
+                        {{ item_list(result) }}
+                    {% endif %}
+                {% endfor %}
             </div>
         {% else %}
-            <p>No items found.</p>
+            <p>No results found.</p>
         {% endif %}
     </div>
 {% endblock %}

@@ -39,7 +39,7 @@ def signup():
         # Get database information (connection)
         conn = get_db()
         # Grab cursor (selector)
-        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
         # Input validation for login (primary key)
         cur.execute("SELECT login FROM users WHERE login = %s;", (login,))
@@ -78,7 +78,7 @@ def login():
         # Get database information (connection)
         conn = get_db()
         # Grab cursor (selector)
-        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
         # Execute query
         cur.execute("""
@@ -118,7 +118,7 @@ def dashboard():
     # Get database information (connection)
     conn = get_db()
     # Grab cursor (selector)
-    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     # Search for logged in user
     cur.execute("""
@@ -222,7 +222,7 @@ def items():
     # Get database information (connection)
     conn = get_db()
     # Grab cursor (selector)
-    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     # Search for items whose name contains the query
     cur.execute("""
@@ -269,6 +269,9 @@ def profile():
     # Grab data for logged in user
     user = cur.fetchone()
 
+    # Check if the user is clicking on their own profile
+    isHost = True if user["login"] == username else False
+
     # Close connection and cursor
     cur.close()
     conn.close()
@@ -277,13 +280,49 @@ def profile():
     return render_template(
         "profile.html", 
         title="View Profile", 
-        user=user
+        user=user,
+        isHost=isHost,
     )
-    
-# Function for calling Bid Page
-@app.route("/bid")
-def bid():
-    return render_template("bid.html", title="Bid")
+
+# Function for viewing Profiles
+@app.route("/profile/<string:login>")
+def view_profile(login):
+    # Make sure user is logged in
+    if "login" not in session:
+        return redirect("/login")
+
+    # Grab user
+    username = session["login"]
+
+    # Get database information (connection)
+    conn = get_db()
+    # Grab cursor (selector)
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    # Search for logged in user
+    cur.execute("""
+        SELECT *
+        FROM users
+        WHERE login = %s;
+    """, (login,))
+
+    # Grab data for logged in user
+    user = cur.fetchone()
+
+    # Check if the user is clicking on their own profile
+    isHost = True if user["login"] == username else False
+
+    # Close connection and cursor
+    cur.close()
+    conn.close()
+
+    # Return user info
+    return render_template(
+        "profile.html", 
+        title="View Profile", 
+        user=user,
+        isHost=isHost,
+    )
     
 # Function for calling Shipment Page
 @app.route("/shipment")
@@ -298,7 +337,7 @@ def shipment():
     # Get database information (connection)
     conn = get_db()
     # Grab cursor (selector)
-    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     # Search for logged in user
     cur.execute("""
@@ -334,26 +373,74 @@ def manageUsers():
 # Function for searching indexes of items
 @app.route("/search", methods=["GET"]) # Query is added to URL itself and not body 
 def search():
+    # Make sure user is logged in
+    if "login" not in session:
+        return redirect("/login")
+
     query = request.args.get("query", "").strip()
 
     # No query so go back to dashboard
     if not query:
-        return render_template("dashboard.html", title="Dashboard")
+        return redirect("/dashboard")
 
     # Get database information (connection)
     conn = get_db()
     # Grab cursor (selector)
-    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-    # Search for items whose name contains the query
+    # Search for items whose name, category, or description is similar
+    # Left join to get all Items despite not being in auction
     cur.execute("""
-        SELECT *
+        SELECT I.*, A.*
         FROM item I
-        WHERE item_name ILIKE %s;
-    """, (f"%{query}%",))
+        LEFT JOIN auction A ON I.item_id = A.item_id
+        WHERE I.item_name ILIKE %s
+        OR I.category ILIKE %s
+        OR I.description ILIKE %s;
+    """, (f"%{query}%", f"%{query}%", f"%{query}%"))
 
     # Get all matching results
     results = cur.fetchall()
+
+    # Add values to external values to return results
+    for auction in results:
+        # If this is an auction
+        if auction["auction_id"]:
+            auction["high_threshold"] = auction["starting_price"] * Decimal("1.3")
+
+            # Format timestamp
+            start_dt = auction["start_time"]
+            end_dt = auction["end_time"]
+
+            readable_start = start_dt.strftime("%b %d, %Y at %I:%M %p")
+            readable_end = end_dt.strftime("%b %d, %Y at %I:%M %p")
+
+            # Compute time remaining
+            end_time = auction["end_time"]
+            now = datetime.now()
+
+            remaining = end_time - now
+
+            # Format string
+            if remaining.total_seconds() <= 0:
+                time_left = None
+            else:
+                days = remaining.days
+                seconds = remaining.seconds
+                hours = seconds // 3600
+                minutes = (seconds % 3600) // 60
+
+                # Cleaner Formatting
+                if days > 0:
+                    time_left = f"{days}d {hours}h remaining"
+                elif hours > 0:
+                    time_left = f"{hours}h {minutes}m remaining"
+                else:
+                    time_left = f"{minutes}m remaining"
+
+            auction["readable_start"] = readable_start
+            auction["readable_end"] = readable_end
+            auction["time_left"] = time_left
 
     # Close connection and cursor
     cur.close()
@@ -366,6 +453,93 @@ def search():
         query=query,
         results=results,
     )
+
+# Function for viewing an Auction (bidding)
+@app.route("/bid/<int:auction_id>")
+def view_auction(auction_id):
+    # Make sure user is logged in
+    if "login" not in session:
+        return redirect("/login")
+
+    # Get database information (connection)
+    conn = get_db()
+    # Grab cursor (selector)
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    # Get auction info for this auction
+    cur.execute("""
+        SELECT A.*, I.*
+        FROM auction A
+        JOIN item I ON A.item_id = I.item_id
+        WHERE A.auction_id = %s;
+    """, (auction_id,))
+    auction = cur.fetchone()
+
+    # Execute query for all bidding information
+    cur.execute("""
+        SELECT *
+        FROM bid
+        WHERE auction_id = %s
+        ORDER BY bid_timestamp DESC;
+    """, (auction_id,))
+    bids = cur.fetchall()
+
+    # Execute query for highest bidder
+    cur.execute("""
+        SELECT *
+        FROM bid
+        WHERE auction_id = %s
+        ORDER BY bid_amount DESC
+        LIMIT 1;
+    """, (auction_id,))
+    highest_bid = cur.fetchone()
+
+    # Add values to external values to return results
+    auction["high_threshold"] = auction["starting_price"] * Decimal("1.3")
+
+    # Format timestamp
+    start_dt = auction["start_time"]
+    end_dt = auction["end_time"]
+
+    readable_start = start_dt.strftime("%b %d, %Y at %I:%M %p")
+    readable_end = end_dt.strftime("%b %d, %Y at %I:%M %p")
+
+    if highest_bid is None:
+        readable_timestamp = None
+    else:
+        readable_timestamp = highest_bid["bid_timestamp"].strftime("%b %d, %Y at %I:%M %p")
+
+    # Compute time remaining
+    end_time = auction["end_time"]
+    now = datetime.now()
+
+    remaining = end_time - now
+
+    # Format string
+    if remaining.total_seconds() <= 0:
+        time_left = None
+    else:
+        days = remaining.days
+        seconds = remaining.seconds
+        hours = seconds // 3600
+        minutes = (seconds % 3600) // 60
+
+        # Cleaner Formatting
+        if days > 0:
+            time_left = f"{days}d {hours}h remaining"
+        elif hours > 0:
+            time_left = f"{hours}h {minutes}m remaining"
+        else:
+            time_left = f"{minutes}m remaining"
+
+    auction["readable_start"] = readable_start
+    auction["readable_end"] = readable_end
+    auction["time_left"] = time_left
+
+    if highest_bid is not None:
+        highest_bid["readable_timestamp"] = readable_timestamp
+
+    return render_template("bid.html", auction=auction, bids=bids, highest_bid=highest_bid)
 
 # Run app locally
 if __name__ == "__main__":

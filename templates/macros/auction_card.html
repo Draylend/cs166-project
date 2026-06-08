@@ -1,0 +1,59 @@
+<!-- Reusable Auction Card Component -->
+
+{% macro auction_card(auction) %}
+<a href="/bid/{{ auction.auction_id }}" style="text-decoration: none; color: inherit;">
+    <div class="full-card">
+        <div class="auction-card-header"></div>
+        <div class="card" style="position: relative;">
+            <div style="display: grid; grid-template-columns: 30% 1fr; gap: 15px;">
+                <div style="display: flex; justify-content: center;">
+                    <!-- If there's an image -->
+                    {% if auction.image_url %}
+                        <img src="{{ auction.image_url }}" style="width: 100%; max-width: 100%; height: auto; border-radius: 10px;"></img>
+                    {% else %}
+                        <p style="display: flex; justify-content: center; align-items: center; background-color: rgb(221, 221, 221); border-radius: 10px; width: 100%; max-width: 100%; height: auto; padding: 15px;">No Image Available</p>
+                    {% endif %}
+                </div>
+                <div style="position: relative;">
+                    <div style="position: relative; display: grid; grid-template-columns: 80% 1fr; gap: 5px;">
+                        <p style="font-size: 32px; margin: 0px;">{{ auction.item_name }}</p>
+                        {% if auction.time_left %}
+                            <p style="position: absolute; top: 0px; right: 0; font-size: 20px; margin: 0px;"><b>{{ auction.time_left }}</b></p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Change color based on auction status -->
+                    {% if auction.auction_status == "Active" %}
+                        <span style="font-size: 20px; margin: 0px; background-color: rgb(149, 255, 144); border-radius: 10px; padding-left: 10px; padding-right: 10px;">{{ auction.auction_status }}</span>
+                    {% else %}
+                        <span style="font-size: 20px; margin: 0px; background-color: rgb(255, 144, 144); border-radius: 10px; padding-left: 10px; padding-right: 10px;">{{ auction.auction_status }}</span>
+                    {% endif %}
+                    
+                    <!-- Chance price based on color to show user urgency -->
+                    <p style="margin-top: 10px; margin-bottom: 0px;">Current Highest Bid</p>
+                    {% if auction.current_highest_bid == 0 %}
+                        <p style="font-size: 32px; font-weight: bold; margin: 0px; color: rgb(12, 207, 54);">${{ auction.current_highest_bid }}</p>
+                    {% elif auction.current_highest_bid > 0 and auction.current_highest_bid < auction.high_threshold %}
+                        <p style="font-size: 32px; font-weight: bold; margin: 0px; color: rgb(16, 129, 235);">${{ auction.current_highest_bid }}</p>
+                    {% else %}
+                        <div style="display: flex; align-items: center;">
+                            <p style="font-size: 32px; font-weight: bold; margin: 0px; color: rgb(236, 46, 40);">${{ auction.current_highest_bid }}</p>
+                            <span style="background-color: rgb(255, 68, 0); color: yellow; margin: 0px; border-radius: 15px; padding-left: 10px; padding-right: 10px; font-weight: bold; margin-left: 10px;">HOT</span>
+                        </div>
+                    {% endif %}
+
+                    <!-- If auction has a winner -->
+                    {% if auction.winner_login %}
+                        <p style="font-size: 20px; margin-top: 15px; margin-bottom: 0px;"><b>Winner: </b> {{ auction.winner_login }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="view">
+                <p style="margin: 0px; font-size: 20px;">View Auction</p>
+                <i class="fa-solid fa-right-long" style="margin: 0px; font-size: 24px;"></i>
+            </div>
+        </div>
+    </div>
+</a>
+
+{% endmacro %}

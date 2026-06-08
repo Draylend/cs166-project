@@ -3,3 +3,5 @@ buyer1,b1,1234567890,1234 Test City,Buyer,Technology
 seller1,s1,1234567890,5678 Test Town,Seller,
 admin1,a1,1234567890,1111 Test Lake,Admin,Coconuts
 seller2,s2,1234567890,2222 Selling Town,Seller,Toys
+buyer2,b2,1234567890,3333 Buying City,Buyer,
+buyer3,b3,1234567890,4444 Buy Town,Buyer,Movies

@@ -6,28 +6,29 @@
     <head>
         <meta charset="UTF-8">
         <title>{{ title }}</title>
+        <link rel="stylesheet" href="/static/style.css">
     </head>
     <body>
         <div style="display: flex; flex-direction: column; align-items: center;">
             <div style="display: flex; font-size: 84px; font-weight: bold;">
-                <span style="color: red; margin: 0px;">t</span>
+                <span style="color: red; margin: 0px;">r</span>
                 <span style="color: blue; margin: 0px;">B</span>
                 <span style="color: rgb(255, 221, 0); margin: 0px;">a</span>
                 <span style="color: greenyellow; margin: 0px;">y</span>
             </div>
-            <p style="margin-top: 15px;">a CS166 Online Auction and Bidding System</p>
+            <p style="margin-top: 15px; font-size: 20px;">a CS166 Online Auction and Bidding System</p>
 
-            <div style="display: flex; flex-direction: column; gap: 5px;">
+            <div style="display: flex; flex-direction: column; gap: 5px; justify-content: center; align-items: center; height: 60vh;">
                 <!-- Login Button -->
                 <a href="/login">
-                    <button style="padding: 10px 20px; font-size: 16px;">
+                    <button class="button-yellow">
                         Login
                     </button>
                 </a>
 
                 <!-- Sign Up Button -->
                 <a href="/signup">
-                    <button style="padding: 10px 20px; font-size: 16px;">
+                    <button class="button-blue">
                         Sign Up
                     </button>
                 </a>
