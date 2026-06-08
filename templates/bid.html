@@ -1,6 +1,5 @@
 <!-- Bid Page -->
 <!-- Display information about the bid and allow bidding -->
- <!-- TODO: display all auction info, item info, bid info -->
 
 {% extends "base.html" %}
 
@@ -9,13 +8,13 @@
         <div style="width: 80vw; position: relative;">
             <hr>
             <!-- Go Back Button -->
-            <a onclick="history.back()" style="text-decoration: none; color: inherit; left: 0px; display: inline-block;">
+            <a href="/auctions" style="text-decoration: none; color: inherit; left: 0px; display: inline-block;">
                 <div class="go-back">
                     <i class="fa-solid fa-left-long" style="margin: 0px; font-size: 24px;"></i>
                     <p style="margin: 0px; font-size: 20px;">Go Back</p>
                 </div>
             </a>
-            <div style="margin-top: 15px; display: grid; grid-template-columns: 70% 1fr; gap: 15px;">
+            <div style="margin-top: 15px; display: grid; grid-template-columns: 70% 1fr; gap: 15px; margin-bottom: 15px;">
                 <div>
                     <div style="position: relative;">
                         <div style="display: grid; grid-template-columns: 30% 1fr; gap: 25px;">
@@ -59,18 +58,17 @@
                                     </div>
                                 {% endif %}
 
+                                <!-- If a bid has been placed, show highest bid -->
                                 {% if highest_bid %}
                                     <div style="font-size: 16px;">
                                         by
-                                        <a href="/profile/{{ highest_bid.buyer_login }}"
-                                        style="text-decoration: none; color: inherit;">
+                                        <a href="/profile/{{ highest_bid.buyer_login }}" class="user">
                                             <b>{{ highest_bid.buyer_login }}</b>
                                         </a>
                                         on {{ highest_bid.readable_timestamp }}
                                     </div>
                                 {% else %}
-                                    <!-- TODO: If no bids placed -->
-                                    <p>No bids yet (sad)</p>
+                                    <p>No bids yet</p>
                                 {% endif %}
 
                                 <!-- If auction has a winner -->
@@ -78,17 +76,88 @@
                                     <p style="font-size: 20px; margin-top: 15px; margin-bottom: 0px;"><b>Winner: </b> {{ auction.winner_login }}</p>
                                 {% endif %}
 
-                                <!-- TODO: Add bidding (insert into table) -->
-                                <p style="position: absolute; right: 0px; bottom: 0px;">Bid Here</p>
+                                <!-- Add Bidding -->
+                                {% if auction.auction_status == 'Active' and viewer_role == 'Buyer' %}
+                                    <div style="position: absolute; right: 0px; bottom: 0px; text-align: right;">
+                                        {% if error %}
+                                            <p style="margin: 0px; color: red;">{{ error }}</p>
+                                        {% endif %}
+                                        <form action="/add_bid" method="POST">
+                                            <input type="hidden" name="auction_id" value="{{ auction.auction_id }}">
+                                            <label style="font-size: 20px;">Bid: $</label>
+                                            <input type="number" name="bid" placeholder="0" required>
+                                            <button type="submit">Submit</button>
+                                        </form>
+                                    </div>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
                 </div>
-                <!-- TODO: Bidding Table History -->
-                <div>Bidding Options</div>
+                <!-- Bidding Table History -->
+                <div>
+                    <table class="bid-table">
+                        <thead>
+                            <tr>
+                                <th>Bidder</th>
+                                <th>Amount</th>
+                                <th>Timestamp</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for bid in bids[:3] %}
+                            <tr>
+                                <td>
+                                    <a href="/profile/{{ bid.buyer_login }}" class="user">
+                                        {{ bid.buyer_login }}
+                                    </a>
+                                </td>
+                                <td>${{ bid.bid_amount }}</td>
+                                <td>{{ bid.readable_timestamp }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
+                    {% if bids|length > 3 %}
+                        <details>
+                            <summary>Show {{ bids|length - 3 }} more bids</summary>
+
+                            <table class="bid-table">
+                                <tbody>
+                                    {% for bid in bids[3:] %}
+                                    <tr>
+                                        <td>
+                                            <a href="/profile/{{ bid.buyer_login }}" class="user">
+                                                {{ bid.buyer_login }}
+                                            </a>
+                                        </td>
+                                        <td>${{ bid.bid_amount }}</td>
+                                        <td>{{ bid.readable_timestamp }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </details>
+                    {% endif %}
+                </div>
             </div>
-            <!-- TODO: Display item info here -->
-            <p>Item info here</p>
+            <hr>
+            <!-- Display item info -->
+            <div style="display: flex; align-items: center; gap: 5px; color: rgb(112, 112, 112); margin-top: 10px;">
+                <p style="font-size: 20px; margin: 0px;">{{ auction.item_condition }}</p>
+                <p style="font-size: 20px; margin: 0px;">•</p>
+                <p style="font-size: 20px; margin: 0px;">{{ auction.category }}</p> 
+            </div>
+            <p style="font-size: 16px; margin: 0px;">{{ auction.description }}</p>
+            <p style="font-size: 24px; font-weight: bold; margin-top: 10px; margin-bottom: 0px;">Original Asking Price: ${{ auction.starting_price }}</p>
+            <div style="font-size: 20px; margin-top: 10px; margin-bottom: 5px;">
+                sold by
+                <a href="/profile/{{ auction.seller_login }}" class="user">
+                    <b>{{ auction.seller_login }}</b>
+                </a>
+            </div>
         </div>
     </div>
 {% endblock %}

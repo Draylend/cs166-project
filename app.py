@@ -1,6 +1,6 @@
 # Using Flask for Web Interface (GUI)
 
-from flask import Flask, render_template, request, redirect, session
+from flask import Flask, render_template, request, redirect, session, url_for
 from database import get_db
 from decimal import Decimal
 from datetime import datetime   # Converting CSV timestamp into readable format
@@ -254,6 +254,9 @@ def profile():
     # Grab user
     username = session["login"]
 
+    # Grab viewer
+    viewer_role = session["role"]
+
     # Get database information (connection)
     conn = get_db()
     # Grab cursor (selector)
@@ -282,6 +285,7 @@ def profile():
         title="View Profile", 
         user=user,
         isHost=isHost,
+        viewer_role=viewer_role
     )
 
 # Function for viewing Profiles
@@ -293,6 +297,9 @@ def view_profile(login):
 
     # Grab user
     username = session["login"]
+
+    # Grab viewer
+    viewer_role = session["role"]
 
     # Get database information (connection)
     conn = get_db()
@@ -316,13 +323,88 @@ def view_profile(login):
     cur.close()
     conn.close()
 
+    message = request.args.get("message")
+    error = request.args.get("error")
+
     # Return user info
     return render_template(
         "profile.html", 
         title="View Profile", 
         user=user,
         isHost=isHost,
+        message=message,
+        error=error,
+        viewer_role=viewer_role
     )
+
+# Function for updating Profile
+@app.route("/update_profile", methods=["POST"])
+def update_profile():
+    # Make sure user is logged in
+    if "login" not in session:
+        return redirect("/login")
+
+    # Grab viewer role to check for privileges
+    viewer_role = session["role"]
+    login = request.form["login"]
+
+    # Grab form data
+    password = request.form["password"]
+    phone = request.form["phone_num"]
+    address = request.form["address"]
+    favorite_category = request.form["favorite_category"]
+
+    # Only admins can change roles
+    if viewer_role == "Admin" and "role" in request.form:
+        new_role = request.form["role"]
+    else:
+        new_role = None
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    try:
+        # If role was changed by admin
+        if new_role:
+            cur.execute("""
+                UPDATE users
+                SET password = %s,
+                    phone_num = %s,
+                    address = %s,
+                    favorite_category = %s,
+                    role = %s
+                WHERE login = %s;
+            """, (password, phone, address, favorite_category, new_role, login))
+        else:
+            cur.execute("""
+                UPDATE users
+                SET password = %s,
+                    phone_num = %s,
+                    address = %s,
+                    favorite_category = %s
+                WHERE login = %s;
+            """, (password, phone, address, favorite_category, login))
+
+        conn.commit()
+
+        return redirect(url_for(
+            "view_profile",
+            login=login,
+            message="Your changes have been successfully saved.",
+            error=""
+        ))
+    # Error Message (most likely invalid role)
+    except Exception as e:
+        conn.rollback()
+        error_msg = "Update failed. Invalid role, field values, or outstanding listings prevent update."
+
+        return redirect(url_for(
+            "view_profile",
+            login=login,
+            message="",
+            error=error_msg
+        ))
+
     
 # Function for calling Shipment Page
 @app.route("/shipment")
@@ -504,10 +586,19 @@ def view_auction(auction_id):
     readable_start = start_dt.strftime("%b %d, %Y at %I:%M %p")
     readable_end = end_dt.strftime("%b %d, %Y at %I:%M %p")
 
+    # Get readable timestamp
     if highest_bid is None:
         readable_timestamp = None
     else:
         readable_timestamp = highest_bid["bid_timestamp"].strftime("%b %d, %Y at %I:%M %p")
+
+    if highest_bid is not None:
+        highest_bid["readable_timestamp"] = readable_timestamp
+
+    for bid in bids:
+        if bid is not None:
+            readable_ts = bid["bid_timestamp"].strftime("%m/%d/%Y at %I:%M %p")
+            bid["readable_timestamp"] = readable_ts
 
     # Compute time remaining
     end_time = auction["end_time"]
@@ -536,10 +627,79 @@ def view_auction(auction_id):
     auction["readable_end"] = readable_end
     auction["time_left"] = time_left
 
-    if highest_bid is not None:
-        highest_bid["readable_timestamp"] = readable_timestamp
+    error = request.args.get("error")
+    return render_template(
+        "bid.html", 
+        auction=auction, 
+        bids=bids, 
+        highest_bid=highest_bid, 
+        error=error, 
+        return_url=request.referrer,
+        viewer_role=session["role"],
+    )
 
-    return render_template("bid.html", auction=auction, bids=bids, highest_bid=highest_bid)
+# Function for adding a bid
+@app.route("/add_bid", methods=["POST"])
+def add_bid():
+    if "login" not in session:
+        return redirect("/login")
+
+    if session["role"] != "Buyer":
+        error = "Only Buyers are allowed to place bids."
+        return redirect(url_for("view_auction", auction_id=auction_id, error=error))
+
+    bid_amount = Decimal(request.form["bid"])
+    auction_id = request.form["auction_id"]
+    bidder = session["login"]
+
+    conn = get_db()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    # Get highest bid
+    cur.execute("""
+        SELECT bid_amount
+        FROM bid
+        WHERE auction_id = %s
+        ORDER BY bid_amount DESC
+        LIMIT 1;
+    """, (auction_id,))
+    highest = cur.fetchone()
+
+    # Validate bid
+    if highest and bid_amount <= highest["bid_amount"]:
+        error = "Your bid must be higher than the current highest bid."
+        return redirect(url_for("view_auction", auction_id=auction_id, error=error))
+
+    if bid_amount <= 0:
+        error = "Bids must be greater than 0."
+        return redirect(url_for("view_auction", auction_id=auction_id, error=error))
+
+    # Insert bid
+    try:
+        # Get the next bid_id in sequence
+        cur.execute("SELECT nextval('bid_id_seq') AS next_id;")
+        next_bid_id = cur.fetchone()["next_id"]
+
+        # Try to insert query
+        cur.execute("""
+            INSERT INTO bid (bid_id, auction_id, buyer_login, buyer_role, bid_amount)
+            VALUES (%s, %s, %s, 'Buyer', %s);
+        """, (next_bid_id, auction_id, bidder, bid_amount))
+
+        # Update Auction Highest Bid
+        cur.execute("""
+            UPDATE auction
+            SET current_highest_bid = %s
+            WHERE auction_id = %s;
+        """, (bid_amount, auction_id))
+
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        error = "Must be a Buyer to bid on auctions."
+        return redirect(url_for("view_auction", auction_id=auction_id, error=error))
+
+    return redirect(f"/bid/{auction_id}")
 
 # Run app locally
 if __name__ == "__main__":

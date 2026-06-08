@@ -5,8 +5,8 @@
     - pressing will display an items details or auction details
     - allow ordering (time, price, seller, auction type (if at all)) -->
 
-{% from "macros/auction_list.html" import auction_list %}
-{% from "macros/item_list.html" import item_list %}
+{% from "macros/auction_card.html" import auction_card %}
+{% from "macros/item_card.html" import item_card %}
 {% extends "base.html" %}
 
 {% block content %}
@@ -26,10 +26,10 @@
                 {% for result in results %}
                     <!-- If this is an auction, display as auction -->
                     {% if result.auction_id %}
-                        {{ auction_list(result) }}
+                        {{ auction_card(result) }}
                     <!-- Else, display as an item -->
                     {% else %}
-                        {{ item_list(result) }}
+                        {{ item_card(result) }}
                     {% endif %}
                 {% endfor %}
             </div>
