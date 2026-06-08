@@ -15,11 +15,34 @@
 {% block content %}
     <h1 style="display: flex; justify-content: center; margin-bottom: 0px; margin-top: 5%;">Dashboard</h1>
     <h2 style="display: flex; justify-content: center; margin: 0px;">Welcome {{ user.login }}!</h2>
-    <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 80vh;">
+    <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; margin-top: 5%;">
         <!-- Search Bar (searches by item name) -->
         <form action="/search" method="GET" class="search-form">
             <input type="text" name="query" placeholder="Search anything" class="search-input">
             <button type="submit" class="search-button">Search</button>
         </form>
+    </div>
+    <div style="display: flex; justify-content: center; margin-top: 5%;">  
+        <!-- Show different options based on role -->
+        {% if user.role == 'Admin' %}
+            <div style="display: flex; gap: 15px;">
+                <a href="/manage_items" style="text-decoration: none; color: inherit;">
+                    <button class="button-green">
+                        Manage Items/Auctions
+                    </button>
+                </a>
+                <a href="/manage_users" style="text-decoration: none; color: inherit;">
+                    <button class="button-green">
+                        Manage Users
+                    </button>
+                </a>
+            </div>
+        {% elif user.role == 'Seller' %}
+            <a href="/items_seller" style="text-decoration: none; color: inherit;">
+                <button class="button-green">
+                    Manage Items/Auctions
+                </button>
+            </a>
+        {% endif %}
     </div>
 {% endblock %}

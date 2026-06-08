@@ -5,7 +5,11 @@ DROP TABLE IF EXISTS auction CASCADE;
 DROP TABLE IF EXISTS item CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 
+DROP SEQUENCE IF EXISTS item_id_seq;
+DROP SEQUENCE IF EXISTS auction_id_seq;
 DROP SEQUENCE IF EXISTS bid_id_seq;
+DROP SEQUENCE IF EXISTS payment_id_seq;
+DROP SEQUENCE IF EXISTS shipment_id_seq;
 
 CREATE TABLE users (
     login VARCHAR(50) PRIMARY KEY,
@@ -109,5 +113,15 @@ CREATE TABLE shipment (
         ON DELETE RESTRICT
 );
 
+CREATE SEQUENCE item_id_seq START 1;
+SELECT setval('item_id_seq', (SELECT COALESCE(MAX(item_id), 3) FROM item));
+
+CREATE SEQUENCE auction_id_seq START 1;
+SELECT setval('auction_id_seq', (SELECT COALESCE(MAX(auction_id), 2) FROM auction));
+
 CREATE SEQUENCE bid_id_seq START 1;
 SELECT setval('bid_id_seq', (SELECT COALESCE(MAX(bid_id), 3) FROM bid));
+
+CREATE SEQUENCE payment_id_seq START 0;
+
+CREATE SEQUENCE shipment_id_seq START 0;

@@ -7,11 +7,20 @@
 
 {% block content %}
     <!-- Display all items -->
+    <div style="margin-top: 5%; position :relative;">
+        {% if viewer_role == 'Seller' %}
+            <div style="position: absolute; right: 15%;">
+                <a onclick="openModal(event)" style="text-decoration: none; color: inherit;">
+                    <i class="fa-solid fa-plus plus"></i>
+                </a>
+            </div>
+        {% endif %}
+    </div>
     {% if results %}
-        <div class="grid" style="margin-top: 5%;">
+        <div class="grid">
             <!-- Display all results in a grid -->
             {% for item in results %}
-                {{ item_card(item) }}
+                {{ item_card(item, viewer_role, viewer_login) }}
             {% endfor %}
         </div>
     {% else %}

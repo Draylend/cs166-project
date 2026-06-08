@@ -12,7 +12,7 @@
         <div class="grid" style="margin-top: 5%;">
             <!-- Display all results in a grid -->
             {% for auction in results %}
-                {{ auction_card(auction) }}
+                {{ auction_card(auction, viewer_role, viewer_login) }}
             {% endfor %}
         </div>
     {% else %}

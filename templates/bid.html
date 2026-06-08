@@ -73,7 +73,13 @@
 
                                 <!-- If auction has a winner -->
                                 {% if auction.winner_login %}
-                                    <p style="font-size: 20px; margin-top: 15px; margin-bottom: 0px;"><b>Winner: </b> {{ auction.winner_login }}</p>
+                                    <div style="display: flex; align-items: center; gap: 5px; font-size: 20px; margin-top: 15px;">
+                                        <span><b>Winner:</b></span>
+
+                                        <a href="/profile/{{ auction.winner_login }}" class="user">
+                                            <b>{{ auction.winner_login }}</b>
+                                        </a>
+                                    </div>
                                 {% endif %}
 
                                 <!-- Add Bidding -->

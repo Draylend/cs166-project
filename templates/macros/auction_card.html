@@ -1,6 +1,6 @@
 <!-- Reusable Auction Card Component -->
 
-{% macro auction_card(auction) %}
+{% macro auction_card(auction, viewer_role, viewer_login) %}
 <a href="/bid/{{ auction.auction_id }}" style="text-decoration: none; color: inherit;">
     <div class="full-card">
         <div class="auction-card-header"></div>

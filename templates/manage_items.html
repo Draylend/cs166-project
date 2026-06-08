@@ -1,0 +1,82 @@
+<!-- Manage Items Page --> 
+<!-- Interface for Sellers to manage their items (edit, delete, add) -->
+
+{% from "macros/item_card.html" import item_card %}
+{% extends "base.html" %}
+
+{% block content %}
+    <div style="display: flex; justify-content: center; align-items: center; margin-top: 5%;">
+        <div style="width: 80vw; position: relative;">
+            <hr>
+            <!-- Go Back Button -->
+            <a href="/items"
+            style="text-decoration: none; color: inherit; display: inline-block;">
+                <div class="go-back">
+                    <i class="fa-solid fa-left-long" style="font-size: 24px;"></i>
+                    <p style="margin: 0; font-size: 20px;">Go Back</p>
+                </div>
+            </a>
+
+            <a href="/create_auction" style="text-decoration: none; color: inherit; position: absolute; right: 0;">
+                <button class="button-green" style="display: inline-flex; align-items: center; width: fit-content; gap: 10px;">
+                    <p style="margin: 0px;">Put up for Auction</p>
+                    <i class="fa-solid fa-money-bill" style="margin: 0px;"></i>
+                </button>
+            </a>
+            <div style="margin-top: 25px;">
+                <form action="/update_item" method="POST">
+                    <input type="hidden" name="item_id" value="{{ item.item_id }}">
+                    <div style="display: grid; grid-template-columns: 30% 1fr; gap: 25px;">
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            {% if item.image_url %}
+                                <img src="{{ item.image_url }}"
+                                    style="width: 100%; border-radius: 10px;">
+                            {% else %}
+                                <p style="display:flex; justify-content:center; align-items:center;
+                                        background:#ddd; border-radius:10px;
+                                        min-height: 200px;">
+                                    No Image Available
+                                </p>
+                            {% endif %}
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <div style="display: flex; align-items: center;">
+                                <label style="font-weight: bold; width: 140px;">Name:</label>
+                                <input type="text" name="item_name" value="{{ item.item_name }}" style="flex: 1;">
+                            </div>
+                            <div style="display: flex; align-items: center;">
+                                <label style="font-weight: bold; width: 140px;">Category:</label>
+                                <input type="text" name="category" value="{{ item.category }}" style="flex: 1;">
+                            </div>
+                            <div style="display: flex; align-items: center;">
+                                <label style="font-weight: bold; width: 140px;">Starting Price:</label>
+                                <input type="number" name="starting_price" value="{{ item.starting_price }}" style="flex: 1;">
+                            </div>
+                            <div style="display: flex; align-items: center;">
+                                <label style="font-weight: bold; width: 140px;">Condition:</label>
+                                <input type="text" name="item_condition" value="{{ item.condition }}" style="flex: 1;">
+                            </div>
+                            <div style="display: flex; align-items: center;">
+                                <label style="font-weight: bold; width: 140px;">Description:</label>
+                                <input type="text" name="description" value="{{ item.description }}" style="flex: 1;">
+                            </div>
+                            <div style="display: flex; align-items: center;">
+                                <label style="font-weight: bold; width: 140px;">Image URL:</label>
+                                <input type="text" name="image_url" value="{{ item.image_url }}" style="flex: 1;">
+                            </div>
+                            <button type="submit" style="margin-top: 15px; padding: 8px;">
+                                Save Changes
+                            </button>
+                            {% if message %}
+                                <p style="color: green; font-weight: bold;">{{ message }}</p>
+                            {% endif %}
+                            {% if error %}
+                                <p style="color: red; font-weight: bold;">{{ error }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}

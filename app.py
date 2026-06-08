@@ -210,6 +210,8 @@ def auctions():
         "auctions.html",
         title="Browse Auctions",
         results=results,
+        viewer_role=session["role"],
+        viewer_login=session["login"]
     )
 
 # Function for calling Items Page
@@ -242,7 +244,128 @@ def items():
         "items.html",
         title="Browse Items",
         results=results,
+        viewer_role=session["role"],
+        viewer_login=session["login"]
     )
+
+# Function for calling Items (for a seller)
+@app.route("/items_seller")
+def items_seller():
+    # Make sure user is logged in
+    if "login" not in session:
+        return redirect("/login")
+
+    login = session["login"]
+        
+    # Get database information (connection)
+    conn = get_db()
+    # Grab cursor (selector)
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    # Search for items whose name contains the query
+    cur.execute("""
+        SELECT *
+        FROM item I, users U
+        WHERE U.login = %s AND I.seller_login = U.login;
+    """, (login,))
+
+    # Get all matching results
+    results = cur.fetchall()
+
+    # Close connection and cursor
+    cur.close()
+    conn.close()
+
+    # Return results
+    return render_template(
+        "items.html",
+        title="Browse Items",
+        results=results,
+        viewer_role=session["role"],
+        viewer_login=session["login"]
+    )
+
+# Function for adding an Item
+@app.route("/add_item", methods=["POST"])
+def add_item():
+    if "login" not in session:
+        return redirect("/login")
+
+    # Gather data
+    item_name = request.form["item_name"]
+    category = request.form["category"]
+    starting_price = request.form["starting_price"]
+    # If user filled out these field(s)
+    image_url = request.form["image_url"] if request.form["image_url"] else None
+    item_condition = request.form["item_condition"] if request.form["item_condition"] else None
+    description = request.form["description"] if request.form["description"] else None
+    login = session["login"]
+
+    conn = get_db()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    # Insert item
+    # Get the next item_id in sequence
+    cur.execute("SELECT nextval('item_id_seq') AS next_id;")
+    next_item_id = cur.fetchone()["next_id"]
+
+    # Try to insert query
+    cur.execute("""
+        INSERT INTO item (
+            item_id, item_name, category, starting_price,
+            image_url, item_condition, description,
+            seller_login, seller_role
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'Seller');
+    """, (next_item_id, item_name, category, starting_price,
+        image_url, item_condition, description, login))
+
+    conn.commit()
+
+    return redirect("/items")
+
+# Function for updating an Item
+@app.route("/update_item", methods=["POST"])
+def update_item():
+    # Make sure user is logged in
+    if "login" not in session:
+        return redirect("/login")
+
+    login = session["login"]
+    item_id = request.form["item_id"]
+
+    # Gather data
+    item_name = request.form["item_name"]
+    category = request.form["category"]
+    starting_price = request.form["starting_price"]
+    # If user filled out these field(s)
+    image_url = request.form["image_url"] if request.form["image_url"] else None
+    item_condition = request.form["item_condition"] if request.form["item_condition"] else None
+    description = request.form["description"] if request.form["description"] else None
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    # Execute query for updating item information
+    cur.execute("""
+            UPDATE item
+            SET item_name = %s,
+                category = %s,
+                starting_price = %s,
+                image_url = %s,
+                item_condition = %s,
+                description = %s
+            WHERE item_id = %s AND seller_login = %s;
+        """, (item_name, category, starting_price, image_url,
+            item_condition, description, item_id, login))
+
+    conn.commit()
+
+    return redirect(url_for(
+        "manage_items",
+        item_id=item_id,
+        message="Your changes have been successfully saved."
+    ))
 
 # Function for calling Profile Page
 @app.route("/profile")
@@ -404,7 +527,6 @@ def update_profile():
             message="",
             error=error_msg
         ))
-
     
 # Function for calling Shipment Page
 @app.route("/shipment")
@@ -421,15 +543,15 @@ def shipment():
     # Grab cursor (selector)
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-    # Search for logged in user
+    # Search for shipments of logged in user
     cur.execute("""
-        SELECT login, role
+        SELECT U.*, S.*, I.*
         FROM users U, shipment S, auction A, item I
         WHERE U.login = %s AND S.auction_id = A.auction_id AND U.login = A.winner_login AND A.item_id = I.item_id;
     """, (username,))
 
     # Grab data for logged in user
-    results = cur.fetchone()
+    results = cur.fetchall()
 
     # Close connection and cursor
     cur.close()
@@ -443,14 +565,40 @@ def shipment():
     )
 
 # Function for calling ManageItems Page
-@app.route("/manageItems")
-def manageItems():
-    return render_template("manageItems.html", title="Manage Items")
+@app.route("/manage_items/<int:item_id>")
+def manage_items(item_id):
+    # Make sure user is logged in
+    if "login" not in session:
+        return redirect("/login")
+
+    # Grab user
+    username = session["login"]
+
+    # Get database information (connection)
+    conn = get_db()
+    # Grab cursor (selector)
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    # Get item info for this item
+    cur.execute("""
+        SELECT I.*
+        FROM item I
+        JOIN users U ON I.seller_login = U.login
+        WHERE U.login = %s AND I.item_id = %s;
+    """, (username, item_id))
+    item = cur.fetchone()
+
+    message = request.args.get("message")
+    return render_template(
+        "manage_items.html", 
+        item=item,
+        message=message,
+    )
     
 # Function for calling ManageUsers Page
-@app.route("/manageUsers")
+@app.route("/manage_users")
 def manageUsers():
-    return render_template("manageUsers.html", title="Manage Users")
+    return render_template("manage_users.html", title="Manage Users")
 
 # Function for searching indexes of items
 @app.route("/search", methods=["GET"]) # Query is added to URL itself and not body 

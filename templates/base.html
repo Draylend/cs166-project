@@ -6,11 +6,52 @@
     <title>tBay</title>
     <link rel="stylesheet" href="/static/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <script>
+        function openModal(event) {
+            event.preventDefault();
+            document.getElementById("modal").style.display = "block";
+        }
+
+        function closeModal() {
+            document.getElementById("modal").style.display = "none";
+        }
+
+        // close when clicking outside
+        window.onclick = function(event) {
+            let modal = document.getElementById("modal");
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+    </script>
 </head>
 <body>
     <!-- Navbar Component -->
     {% include "navbar.html" %}
 
     {% block content %}{% endblock %}
+
+    <!-- Component for creating items -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+
+            <span class="close" onclick="closeModal()">&times;</span>
+
+            <h2>Add Item</h2>
+
+            <form method="POST" action="/add_item">
+                <input type="text" name="item_name" placeholder="Item name" required>
+                <input type="text" name="category" placeholder="Category" required>
+                <input type="number" name="starting_price" placeholder="Starting Price" required>
+                <input type="text" name="image_url" placeholder="Image Link">
+                <input type="text" name="item_condition" placeholder="Item Condition">
+                <input type="text" name="description" placeholder="Description">
+
+                <button type="submit">Create</button>
+            </form>
+
+        </div>
+    </div>
 </body>
 </html>

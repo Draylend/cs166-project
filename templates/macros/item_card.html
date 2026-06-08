@@ -1,6 +1,6 @@
 <!-- Reusable Item Card Component -->
 
-{% macro item_card(item) %}
+{% macro item_card(item, viewer_role, viewer_login) %}
 <div class="full-card">
     <div class="item-card-header"></div>
     <div class="card" style="position: relative">
@@ -25,18 +25,27 @@
                 <p style="font-size: 32px; font-weight: bold; margin-top: 10px; margin-bottom: 0px;">${{ item.starting_price }}</p>
                 
                 <div style="font-size: 20px; margin-top: 10px; margin-bottom: 5px;">
-                    sold by
-                    <a href="/profile/{{ item.seller_login }}" class="user">
-                        <b>{{ item.seller_login }}</b>
-                    </a>
+                    posted by
+                    <!-- If posted by user, no need to link profile -->
+                    {% if viewer_role == 'Seller' and viewer_login == item.seller_login %}
+                        <b>YOU</b>
+                    {% else %}
+                        <a href="/profile/{{ item.seller_login }}" class="user">
+                            <b>{{ item.seller_login }}</b>
+                        </a>
+                    {% endif %}
                 </div>
                 <p style="font-size: 16px; margin: 0px;">{{ item.description }}</p>
             </div>
         </div>
-        <!-- <div class="view">
-            <p style="margin: 0px; font-size: 20px;">View Item</p>
-            <i class="fa-solid fa-right-long" style="margin: 0px; font-size: 24px;"></i>
-        </div> -->
+        {% if viewer_role == 'Seller' and viewer_login == item.seller_login %}
+            <a href="/manage_items/{{ item.item_id }}" style="text-decoration: none; color: inherit;">
+                <div class="view spin-element">
+                    <p style="margin: 0px; font-size: 20px;">Edit Item</p>
+                    <i class="fa-solid fa-gear spin" style="margin: 0px; font-size: 24px;"></i>
+                </div>
+            </a>
+        {% endif %}
     </div>
 </div>
 {% endmacro %}

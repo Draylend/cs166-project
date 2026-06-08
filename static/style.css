@@ -59,11 +59,10 @@
 
 .search-button {
     padding: 12px 20px;
-    border: 1px solid #ccc;
+    border: 1px solid #943dff;
     border-left: none;
     border-radius: 0 999px 999px 0;
-    background: #333;
-    color: white;
+    background: #edd1ff;
     cursor: pointer;
 }
 
@@ -89,6 +88,22 @@
 .button-yellow:hover {
     background-color: #ffcb3d;
     border-color: #fff5db;
+    transform: scale(1.05);
+}
+
+.button-green {
+    padding: 10px 20px; 
+    font-size: 16px;
+    border-radius: 15px;
+    border-color: #3dff87;
+    background-color: #dbffec;
+    border-style: solid;
+    transition: all 0.2s ease;
+}
+
+.button-green:hover {
+    background-color: #3dff87;
+    border-color: #dbffec;
     transform: scale(1.05);
 }
 
@@ -166,4 +181,51 @@
     text-decoration: none;
     color: inherit;
     font-weight: bold;
+}
+
+.spin {
+    transition: transform 0.5s ease;
+}
+
+.spin-element:hover .spin {
+    transform: rotate(360deg);
+}
+
+.plus {
+    font-size: 40px;
+    transition: all 0.2s ease;
+}
+
+.plus:hover {
+    color: #0148c2;
+    transform: scale(1.5);
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background: white;
+    margin: 10% auto;
+    padding: 20px;
+    width: 300px;
+    border-radius: 10px;
+}
+
+.close {
+    float: right;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.close:hover {
+    transform: scale(1.3);
 }
