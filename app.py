@@ -1025,7 +1025,7 @@ def remove_user(login):
     cur.close()
     conn.close()
 
-    return redirect(url_for("manage_users", message="User removed successfully.", error=""))
+    return redirect(url_for("manageUsers", message="User removed successfully.", error=""))
     
 # Function for calling Payments Page
 @app.route("/payments")
