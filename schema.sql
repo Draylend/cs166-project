@@ -126,3 +126,4 @@ CREATE SEQUENCE payment_id_seq START 1;
 SELECT setval('payment_id_seq', (SELECT COALESCE(MAX(payment_id), 1) FROM payment));
 
 CREATE SEQUENCE shipment_id_seq START 1;
+SELECT setval('shipment_id_seq', (SELECT COALESCE(MAX(shipment_id), 1) FROM shipment));
