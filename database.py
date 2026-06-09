@@ -11,5 +11,5 @@ def get_db():
         user=getpass.getuser(),
         password="",
         host="localhost",
-        port=os.getenv("DB_PORT", "36260")  # default to yours
+        port=os.getenv("DB_PORT", "36260")
     )
