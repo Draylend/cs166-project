@@ -3,11 +3,13 @@
 import psycopg2
 import psycopg2.extras
 
+import os, getpass
+
 def get_db():
     return psycopg2.connect(
         database="cs166_db",
-        user="dchow001",
+        user=getpass.getuser(),
         password="",
         host="localhost",
-        port="36260"
+        port=os.getenv("DB_PORT", "36260")  # default to yours
     )
