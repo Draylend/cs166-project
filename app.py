@@ -305,6 +305,50 @@ def create_auction():
 
     return redirect(url_for("manage_items", item_id=item_id, message="Auction has been successfully published.", error=""))
 
+# Function for removing an Auction
+@app.route("/remove_auction_seller", methods=["POST"])
+def remove_auction_seller():
+    if "login" not in session:
+        return redirect("/login")
+
+    seller_login = session["login"]
+    seller_role = session["role"]
+
+    auction_id = request.form["auction_id"]
+    item_id = request.form["item_id"]
+
+    # Only sellers can remove auctions
+    if seller_role != "Seller":
+        return redirect(url_for("manage_items", item_id=item_id, error="Only sellers can remove auctions."))
+
+    conn = get_db()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    # Ensure the seller owns this auction
+    cur.execute("""
+        SELECT auction_id
+        FROM auction
+        WHERE auction_id = %s AND seller_login = %s;
+    """, (auction_id, seller_login))
+
+    if cur.fetchone() is None:
+        return redirect(url_for("manage_items", item_id=item_id, error="You do not own this auction."))
+
+    try:
+        # Delete the auction
+        cur.execute("""
+            DELETE FROM auction
+            WHERE auction_id = %s;
+        """, (auction_id,))
+
+        conn.commit()
+
+    except Exception:
+        conn.rollback()
+        return redirect(url_for("manage_items", item_id=item_id, error="Failed to remove auction."))
+
+    return redirect(url_for("manage_items", item_id=item_id, message="Auction removed successfully."))
+
 # Function for updating an Auction
 @app.route("/update_auction", methods=["POST"])
 def update_auction():
@@ -414,6 +458,86 @@ def update_auction():
         message="Auction updated successfully."
     ))
 
+# Helper function for ending an Auction (allows manual and time to end an auction)
+def end_auction_logic(auction_id):
+    conn = get_db()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    # Get item_id and seller
+    cur.execute("""
+        SELECT item_id, seller_login
+        FROM auction
+        WHERE auction_id = %s;
+    """, (auction_id,))
+    auction = cur.fetchone()
+
+    # No auction found
+    if not auction:
+        return False, "Auction not found."
+
+    item_id = auction["item_id"]
+
+    # Get highest bid
+    cur.execute("""
+        SELECT buyer_login, buyer_role, bid_amount
+        FROM bid
+        WHERE auction_id = %s
+        ORDER BY bid_amount DESC
+        LIMIT 1;
+    """, (auction_id,))
+    highest = cur.fetchone()
+
+    try:
+        if highest:
+            # If there was at least one bid; close auction permanently
+            cur.execute("""
+                UPDATE auction
+                SET auction_status = 'Closed',
+                    winner_login = %s,
+                    winner_role = %s,
+                    end_time = NOW()
+                WHERE auction_id = %s;
+            """, (highest["buyer_login"], highest["buyer_role"], auction_id))
+
+            # Create payment row
+            cur.execute("""
+                INSERT INTO payment (payment_id, auction_id, buyer_login, buyer_role, amount, payment_status)
+                VALUES (nextval('payment_id_seq'), %s, %s, 'Buyer', %s, 'Pending');
+            """, (auction_id, highest["buyer_login"], highest["bid_amount"]))
+
+            conn.commit()
+            return True, "Auction closed with a winner."
+
+        else:
+            # No bids, delete auction and allow item to be reauctioned
+            cur.execute("DELETE FROM auction WHERE auction_id = %s;", (auction_id,))
+            conn.commit()
+            return True, "Auction ended with no bids and was removed."
+
+    except Exception as e:
+        conn.rollback()
+        return False, "Failed to end auction."
+
+# Function for ending an Auction
+@app.route("/end_auction", methods=["POST"])
+def end_auction():
+    if "login" not in session:
+        return redirect("/login")
+
+    auction_id = request.form["auction_id"]
+    item_id = request.form["item_id"]
+
+    success, msg = end_auction_logic(auction_id)
+
+    if success:
+        # If auction was deleted, redirect to item page
+        if "no bids" in msg:
+            return redirect(url_for("manage_items", item_id=item_id, message=msg))
+        else:
+            return redirect(url_for("view_auction", auction_id=auction_id, message=msg))
+
+    return redirect(url_for("view_auction", auction_id=auction_id, error=msg))
+
 # Function for calling Items Page
 @app.route("/items")
 def items():
@@ -502,6 +626,57 @@ def items_seller():
         viewer_login=session["login"]
     )
 
+# Function for calling Items (for an admin)
+@app.route("/items_admin")
+def items_admin():
+    # Make sure user is logged in
+    if "login" not in session:
+        return redirect("/login")
+
+    login = session["login"]
+        
+    # Get database information (connection)
+    conn = get_db()
+    # Grab cursor (selector)
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    # Search for all items/auctions owned by this user
+    # but remove the double item/auction if an item is in an auction
+    cur.execute("""
+        SELECT 
+            I.*,
+            A.auction_id,
+            A.current_highest_bid,
+            A.auction_status,
+            A.start_time,
+            A.end_time,
+            A.winner_login,
+            A.winner_role
+        FROM item I
+        LEFT JOIN auction A ON I.item_id = A.item_id
+    """)
+
+    # Get all matching results
+    results = cur.fetchall()
+
+    # Add missing high_threshold for auctions
+    for row in results:
+        if row["auction_id"]:
+            row["high_threshold"] = row["starting_price"] * Decimal("1.3")
+
+    # Close connection and cursor
+    cur.close()
+    conn.close()
+
+    # Return results
+    return render_template(
+        "items.html",
+        title="All Items & Auctions",
+        results=results,
+        viewer_role=session["role"],
+        viewer_login=session["login"]
+    )
+
 # Function for adding an Item
 @app.route("/add_item", methods=["POST"])
 def add_item():
@@ -583,6 +758,56 @@ def update_item():
         item_id=item_id,
         message="Your changes have been successfully saved."
     ))
+
+# Function for removing an Item
+@app.route("/remove_item_seller", methods=["POST"])
+def remove_item_seller():
+    if "login" not in session:
+        return redirect("/login")
+
+    seller_login = session["login"]
+    seller_role = session["role"]
+
+    item_id = request.form["item_id"]
+
+    # Only sellers can remove items
+    if seller_role != "Seller":
+        return redirect(url_for("manage_items", item_id=item_id, error="Only sellers can remove items."))
+
+    conn = get_db()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    # Execute query for this sellers item
+    cur.execute("""
+        SELECT item_id
+        FROM item
+        WHERE item_id = %s AND seller_login = %s;
+    """, (item_id, seller_login))
+
+    if cur.fetchone() is None:
+        return redirect(url_for("manage_items", item_id=item_id, error="You do not own this item."))
+
+    # Double-check: Item not in an auction
+    cur.execute("""
+        SELECT auction_id
+        FROM auction
+        WHERE item_id = %s;
+    """, (item_id,))
+    auction = cur.fetchone()
+
+    if auction:
+        return redirect(url_for("manage_items", item_id=item_id, error="Cannot remove an item that is in an auction."))
+
+    # Delete the item
+    try:
+        cur.execute("DELETE FROM item WHERE item_id = %s;", (item_id,))
+        conn.commit()
+
+    except Exception:
+        conn.rollback()
+        return redirect(url_for("manage_items", item_id=item_id, error="Failed to remove item."))
+
+    return redirect(url_for("items_seller", message="Item removed successfully."))
 
 # Function for calling Profile Page
 @app.route("/profile")
@@ -745,39 +970,111 @@ def update_profile():
             error=error_msg
         ))
     
-# Function for calling Shipment Page
-@app.route("/shipment")
-def shipment():
-    # Make sure user is logged in
+# Function for calling Payments Page
+@app.route("/payments")
+def payments():
     if "login" not in session:
         return redirect("/login")
 
-    # Grab user
-    username = session["login"]
+    buyer_login = session["login"]
 
-    # Get database information (connection)
     conn = get_db()
-    # Grab cursor (selector)
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-    # Search for shipments of logged in user
+    # Execute query to get all payments, auctions, and items for the session user
     cur.execute("""
-        SELECT U.*, S.*, I.*
-        FROM users U, shipment S, auction A, item I
-        WHERE U.login = %s AND S.auction_id = A.auction_id AND U.login = A.winner_login AND A.item_id = I.item_id;
-    """, (username,))
+        SELECT P.*, A.*, I.*
+        FROM payment P
+        JOIN auction A ON P.auction_id = A.auction_id
+        JOIN item I ON A.item_id = I.item_id
+        WHERE P.buyer_login = %s
+        ORDER BY P.payment_id DESC;
+    """, (buyer_login,))
 
-    # Grab data for logged in user
-    results = cur.fetchall()
+    payments = cur.fetchall()
 
-    # Close connection and cursor
     cur.close()
     conn.close()
 
-    # Return user info
     return render_template(
-        "shipment.html", 
-        title="View Shipments", 
+        "payments.html",
+        results=payments,
+        viewer_login=session["login"],
+        viewer_role=session["role"]
+    )
+
+# Function for calling Payments Page
+@app.route("/pay", methods=["POST"])
+def pay():
+    if "login" not in session:
+        return redirect("/login")
+
+    payment_id = request.form.get("payment_id")
+    buyer_login = session["login"]
+
+    conn = get_db()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    # Execute query to update payment status
+    cur.execute("""
+        UPDATE payment
+        SET payment_status = 'Completed'
+        WHERE payment_id = %s AND buyer_login = %s
+        RETURNING auction_id;
+    """, (payment_id, buyer_login))
+
+    row = cur.fetchone()
+
+    # If no row returned then payment doesn't belong to this user
+    if not row:
+        conn.commit()
+        cur.close()
+        conn.close()
+        return redirect(url_for("payments"))
+
+    auction_id = row["auction_id"]
+
+    # Add shipment upon successful payment
+    cur.execute("""
+        INSERT INTO shipment (auction_id, shipment_status)
+        VALUES (%s, 'Pending');
+    """, (auction_id,))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return redirect(url_for("payments"))
+
+# Function for calling Shipment Page
+@app.route("/shipments")
+def shipments():
+    if "login" not in session:
+        return redirect("/login")
+
+    username = session["login"]
+
+    conn = get_db()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    # Grab shipment status for this user
+    cur.execute("""
+        SELECT S.*, A.*, I.*
+        FROM shipment S
+        JOIN auction A ON S.auction_id = A.auction_id
+        JOIN item I ON A.item_id = I.item_id
+        WHERE A.winner_login = %s
+        ORDER BY S.shipment_id DESC;
+    """, (username,))
+
+    results = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    return render_template(
+        "shipment.html",
+        title="View Shipments",
         results=results
     )
 
@@ -926,6 +1223,30 @@ def view_auction(auction_id):
     """, (auction_id,))
     auction = cur.fetchone()
 
+    # Grab info
+    seller_login = auction["seller_login"]
+    item_id = auction["item_id"]
+
+    # Automatically close expired auction
+    if auction["auction_status"] == "Active" and auction["end_time"] <= datetime.now():
+        success, msg = end_auction_logic(auction_id)
+
+        # Re-fetch auction
+        cur.execute("""
+            SELECT A.*, I.*
+            FROM auction A
+            JOIN item I ON A.item_id = I.item_id
+            WHERE A.auction_id = %s;
+        """, (auction_id,))
+        auction = cur.fetchone()
+
+         # If auction ended with no bids, send sellers to manage_items and buyers to auction page
+        if auction is None:
+            if session["role"] == "Seller" and session["login"] == seller_login:
+                return redirect(url_for("manage_items", item_id=item_id, message="Auction ended with no bids and was removed."))
+            else:
+                return redirect(url_for("auctions", message="That auction ended with no bids and was removed."))
+
     # Execute query for all bidding information
     cur.execute("""
         SELECT *
@@ -979,10 +1300,11 @@ def view_auction(auction_id):
     if remaining.total_seconds() <= 0:
         time_left = None
     else:
-        days = remaining.days
-        seconds = remaining.seconds
-        hours = seconds // 3600
-        minutes = (seconds % 3600) // 60
+        total_seconds = int(remaining.total_seconds())
+
+        days = total_seconds // 86400
+        hours = (total_seconds % 86400) // 3600
+        minutes = (total_seconds % 3600) // 60
 
         # Cleaner Formatting
         if days > 0:

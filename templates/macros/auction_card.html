@@ -55,7 +55,7 @@
         </div>
         <a href="/bid/{{ auction.auction_id }}" style="text-decoration: none; color: inherit;">
             <!-- If this is a seller, display option to edit auction -->
-            {% if auction.auction_status == 'Active' and viewer_role == 'Seller' and viewer_login == auction.seller_login %}
+            {% if (auction.auction_status == 'Active' and viewer_role == 'Seller' and viewer_login == auction.seller_login) or viewer_role == 'Admin' %}
                 <div class="view spin-element">
                     <p style="margin: 0px; font-size: 20px;">Edit Auction</p>
                     <i class="fa-solid fa-gear spin" style="margin: 0px; font-size: 24px;"></i>

@@ -75,6 +75,17 @@
                         </div>
                     </div>
                 </form>
+                <div style="text-align: right;">
+                    {% if error %}
+                        <p style="margin: 0px; color: red;">{{ error }}</p>
+                    {% endif %}
+                    <form action="/remove_item_seller" method="POST">
+                        <input type="hidden" name="item_id" value="{{ item.item_id }}">
+                        <button type="submit" class="button-red" style="display: inline-flex; align-items: center; width: fit-content; gap: 10px;">
+                            Remove Item
+                        </button>
+                    </form>
+            </div>
             </div>
         </div>
     </div>

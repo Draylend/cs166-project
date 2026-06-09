@@ -38,7 +38,7 @@
                 <p style="font-size: 16px; margin: 0px;">{{ item.description }}</p>
             </div>
         </div>
-        {% if viewer_role == 'Seller' and viewer_login == item.seller_login %}
+        {% if (viewer_role == 'Seller' and viewer_login == item.seller_login) or viewer_role == 'Admin' %}
             <a href="/manage_items/{{ item.item_id }}" style="text-decoration: none; color: inherit;">
                 <div class="view spin-element">
                     <p style="margin: 0px; font-size: 20px;">Edit Item</p>

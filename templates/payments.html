@@ -1,4 +1,4 @@
-<!-- Shipment Page -->
+<!-- Payment Page -->
 <!-- Display information about a users shipments -->
 
 {% extends "base.html" %}
@@ -9,7 +9,7 @@
         <!-- Display all results in a grid -->
         {% for result in results %}
             <div class="full-card">
-                <div class="shipment-card-header"></div>
+                <div class="payment-card-header"></div>
                 <div class="card">
                     <div style="display: grid; grid-template-columns: 120px 1fr; gap: 20px;">
                         <div>
@@ -25,29 +25,46 @@
                         <div style="position: relative;">
                             <h2 style="margin-top:0;">{{ result.item_name }}</h2>
                             <p style="margin:5px 0;">
-                                <b>Address:</b>
-                                ${{ result.address }}
+                                <b>Amount Due:</b>
+                                ${{ result.amount }}
                             </p>
                             <p style="margin:5px 0;">
                                 <b>Status:</b>
-                                {% if result.shipment_status == 'Delivered' %}
+                                {% if result.payment_status == 'Completed' %}
                                     <span style="color:green;font-weight:bold;">
-                                        Delivered
+                                        Paid
                                     </span>
-                                {% elif result.shipment_status == 'Shipped' %}
+                                {% elif result.payment_status == 'Pending' %}
                                     <span style="color:rgb(83, 137, 255);font-weight:bold;">
-                                        Shipped
+                                        Pending
                                     </span>
                                 {% else %}
-                                    <span style="color: rgb(255, 128, 48);font-weight:bold;">
-                                        Pending
+                                    <span style="color: red;font-weight:bold;">
+                                        Failed
                                     </span>
                                 {% endif %}
                             </p>
-                            <p style="margin:5px 0;">
-                                <b>Tracking Number:</b>
-                                ${{ result.tracking_number }}
-                            </p>
+                            {% if result.payment_status != "Completed" %}
+                                <form action="/pay" method="POST">
+                                    <input type="hidden"
+                                        name="payment_id"
+                                        value="{{ result.payment_id }}">
+
+                                    <button type="submit"
+                                            class="button-green"
+                                            style="margin-top:10px;">
+                                        Pay Now
+                                    </button>
+                                </form>
+                            {% else %}
+                                <button disabled
+                                        style="
+                                        margin-top:10px;
+                                        background:#ccc;
+                                        cursor:not-allowed;">
+                                    Payment Complete
+                                </button>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -55,6 +72,6 @@
             {% endfor %}
         </div>
     {% else %}
-        <h2 style="display: flex; justify-content: center;">No shipments found.</h2>
+        <h2 style="display: flex; justify-content: center;">No payments found.</h2>
     {% endif %}
 {% endblock %}

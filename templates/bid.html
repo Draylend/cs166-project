@@ -277,7 +277,31 @@
                         <button type="submit">Submit</button>
                     </form>
                 </div>
-            {% elif auction.auction_status == 'Active' and viewer_role == 'Seller' and viewer_login == auction.seller_login %}
+            {% elif (auction.auction_status == 'Active' and viewer_role == 'Seller' and viewer_login == auction.seller_login) or viewer_role == 'Admin' %}
+                <div style="position: absolute; right: 0px; top: 75%; text-align: right;">
+                    {% if error %}
+                        <p style="margin: 0px; color: red;">{{ error }}</p>
+                    {% endif %}
+                    <form action="/end_auction" method="POST">
+                        <input type="hidden" name="auction_id" value="{{ auction.auction_id }}">
+                        <input type="hidden" name="item_id" value="{{ auction.item_id }}">
+                        <button type="submit" class="button-yellow" style="display: inline-flex; align-items: center; width: fit-content; gap: 10px;">
+                            End Auction
+                        </button>
+                    </form>
+                </div>
+                <div style="position: absolute; right: 0px; top: 87%; text-align: right;">
+                    {% if error %}
+                        <p style="margin: 0px; color: red;">{{ error }}</p>
+                    {% endif %}
+                    <form action="/remove_auction_seller" method="POST">
+                        <input type="hidden" name="auction_id" value="{{ auction.auction_id }}">
+                        <input type="hidden" name="item_id" value="{{ auction.item_id }}">
+                        <button type="submit" class="button-red" style="display: inline-flex; align-items: center; width: fit-content; gap: 10px;">
+                            Remove Auction
+                        </button>
+                    </form>
+                </div>
             {% endif %}
         </div>
     </div>

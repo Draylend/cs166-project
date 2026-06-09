@@ -26,7 +26,7 @@
         <!-- Show different options based on role -->
         {% if user.role == 'Admin' %}
             <div style="display: flex; gap: 15px;">
-                <a href="/manage_items" style="text-decoration: none; color: inherit;">
+                <a href="/items_admin" style="text-decoration: none; color: inherit;">
                     <button class="button-green">
                         Manage Items/Auctions
                     </button>
@@ -43,6 +43,19 @@
                     Manage Items/Auctions
                 </button>
             </a>
+        {% else %}
+            <div style="display: flex; gap: 15px;">
+                <a href="/payments" style="text-decoration: none; color: inherit;">
+                    <button class="button-green">
+                        View Payments
+                    </button>
+                </a>
+                <a href="/shipments" style="text-decoration: none; color: inherit;">
+                    <button class="button-green">
+                        View Shipments
+                    </button>
+                </a>
+            </div>
         {% endif %}
     </div>
 {% endblock %}

@@ -22,6 +22,20 @@
     margin: 0px;
 }
 
+.payment-card-header {
+    background-color: #d899ff; 
+    height: 10px; 
+    border-radius: 15px 15px 0px 0px;
+    margin: 0px;
+}
+
+.shipment-card-header {
+    background-color: #b9ffcc; 
+    height: 10px; 
+    border-radius: 15px 15px 0px 0px;
+    margin: 0px;
+}
+
 .card {
     background-color: #fffbf2;
     box-shadow: 0px 3px 6px -1px rgba(0, 0, 0, 0.30);
@@ -121,6 +135,7 @@
     background-color: #ff44ab;
     border-color: #ffb9df;
     transform: scale(1.05);
+    color: white;
 }
 
 .button-blue {
@@ -136,6 +151,23 @@
 .button-blue:hover {
     background-color: #0148c2;
     border-color: #d6e5ff;
+    color: white;
+    transform: scale(1.05);
+}
+
+.button-red {
+    padding: 10px 20px; 
+    font-size: 16px;
+    border-radius: 15px;
+    border-color: #d00801;
+    background-color: #ffb7b7;
+    border-style: solid;
+    transition: all 0.2s ease;
+}
+
+.button-red:hover {
+    background-color: #d00801;
+    border-color: #ffb7b7;
     color: white;
     transform: scale(1.05);
 }

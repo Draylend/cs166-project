@@ -1,0 +1,2 @@
+payment_id,auction_id,buyer_login,buyer_role,amount,payment_status
+1,2,buyer2,Buyer,90,Completed
