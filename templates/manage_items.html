@@ -16,9 +16,8 @@
                     <p style="margin: 0; font-size: 20px;">Go Back</p>
                 </div>
             </a>
-
-            <a href="/create_auction" style="text-decoration: none; color: inherit; position: absolute; right: 0;">
-                <button class="button-green" style="display: inline-flex; align-items: center; width: fit-content; gap: 10px;">
+            <a href="#" onclick="openModal('create-auction'); return false;" style="text-decoration: none; color: inherit; position: absolute; right: 0;">
+                <button class="button-pink" style="display: inline-flex; align-items: center; width: fit-content; gap: 10px;">
                     <p style="margin: 0px;">Put up for Auction</p>
                     <i class="fa-solid fa-money-bill" style="margin: 0px;"></i>
                 </button>
@@ -79,4 +78,16 @@
             </div>
         </div>
     </div>
+
+    <!-- Creating Auctions -->
+    {{ modal(
+        "create-auction",
+        "Create Auction",
+        "/create_auction",
+        [
+            {"type":"hidden","name":"item_id","value":item.item_id},
+            {"type":"datetime-local","name":"end_time","label":"End Time","required":True}
+        ],
+        "Create Auction"
+    ) }}
 {% endblock %}

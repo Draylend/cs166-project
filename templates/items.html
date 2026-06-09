@@ -2,6 +2,7 @@
 <!-- Display all items -->
 <!-- TODO: Add ordering/filtering, search bar -->
 
+{% from "macros/auction_card.html" import auction_card %}
 {% from "macros/item_card.html" import item_card %}
 {% extends "base.html" %}
 
@@ -10,7 +11,7 @@
     <div style="margin-top: 5%; position :relative;">
         {% if viewer_role == 'Seller' %}
             <div style="position: absolute; right: 15%;">
-                <a onclick="openModal(event)" style="text-decoration: none; color: inherit;">
+                <a href="#" onclick="openModal('add-item'); return false;" style="text-decoration: none; color: inherit;">
                     <i class="fa-solid fa-plus plus"></i>
                 </a>
             </div>
@@ -19,8 +20,14 @@
     {% if results %}
         <div class="grid">
             <!-- Display all results in a grid -->
-            {% for item in results %}
-                {{ item_card(item, viewer_role, viewer_login) }}
+            {% for result in results %}
+                <!-- If this is an auction, display as auction -->
+                    {% if result.auction_id %}
+                        {{ auction_card(result, viewer_role, viewer_login) }}
+                    <!-- Else, display as an item -->
+                    {% else %}
+                        {{ item_card(result, viewer_role, viewer_login) }}
+                    {% endif %}
             {% endfor %}
         </div>
     {% else %}

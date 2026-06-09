@@ -107,6 +107,22 @@
     transform: scale(1.05);
 }
 
+.button-pink {
+    padding: 10px 20px; 
+    font-size: 16px;
+    border-radius: 15px;
+    border-color: #ff44ab;
+    background-color: #ffb9df;
+    border-style: solid;
+    transition: all 0.2s ease;
+}
+
+.button-pink:hover {
+    background-color: #ff44ab;
+    border-color: #ffb9df;
+    transform: scale(1.05);
+}
+
 .button-blue {
     padding: 10px 20px; 
     font-size: 16px;
@@ -228,4 +244,32 @@
 
 .close:hover {
     transform: scale(1.3);
+}
+
+.field-row {
+    margin-bottom: 12px;
+}
+
+.edit-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.edit-group i {
+    font-size: 18px;
+    color: #0148c2;
+}
+
+.edit-input {
+    font-size: 20px;
+    padding: 6px 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    width: 200px;
+}
+
+.display-text {
+    font-size: 28px;
+    font-weight: 600;
 }

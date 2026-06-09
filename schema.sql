@@ -114,14 +114,14 @@ CREATE TABLE shipment (
 );
 
 CREATE SEQUENCE item_id_seq START 1;
-SELECT setval('item_id_seq', (SELECT COALESCE(MAX(item_id), 3) FROM item));
+SELECT setval('item_id_seq', (SELECT COALESCE(MAX(item_id), 4) FROM item));
 
 CREATE SEQUENCE auction_id_seq START 1;
-SELECT setval('auction_id_seq', (SELECT COALESCE(MAX(auction_id), 2) FROM auction));
+SELECT setval('auction_id_seq', (SELECT COALESCE(MAX(auction_id), 3) FROM auction));
 
 CREATE SEQUENCE bid_id_seq START 1;
-SELECT setval('bid_id_seq', (SELECT COALESCE(MAX(bid_id), 3) FROM bid));
+SELECT setval('bid_id_seq', (SELECT COALESCE(MAX(bid_id), 4) FROM bid));
 
-CREATE SEQUENCE payment_id_seq START 0;
+CREATE SEQUENCE payment_id_seq START 1;
 
-CREATE SEQUENCE shipment_id_seq START 0;
+CREATE SEQUENCE shipment_id_seq START 1;

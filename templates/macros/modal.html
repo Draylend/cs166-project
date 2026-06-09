@@ -1,0 +1,27 @@
+<!-- Reusable Popup Component -->
+
+{% macro modal(modal_id, title, action, fields, submit_text="Submit") %}
+<div id="{{ modal_id }}" class="modal">
+    <div class="modal-content">
+
+        <span class="close" onclick="closeModal('{{ modal_id }}')">&times;</span>
+
+        <h2>{{ title }}</h2>
+
+        <!-- Loop through all added fields -->
+        <form method="POST" action="{{ action }}">
+            {% for field in fields %}
+                <input
+                    type="{{ field.type }}"
+                    name="{{ field.name }}"
+                    {% if field.value is defined %}value="{{ field.value }}"{% endif %}
+                    {% if field.placeholder is defined %}placeholder="{{ field.placeholder }}"{% endif %}
+                    {% if field.required %}required{% endif %}
+                >
+            {% endfor %}
+
+            <button type="submit">{{ submit_text }}</button>
+        </form>
+    </div>
+</div>
+{% endmacro %}

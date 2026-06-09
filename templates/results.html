@@ -10,7 +10,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h1 style="display: flex; justify-content: center; margin-bottom: 0px; margin-top: 5%;">Auctions</h1>
+    <h1 style="display: flex; justify-content: center; margin-bottom: 0px; margin-top: 5%;">Results</h1>
     <div style="display: flex; flex-direction: column; align-items: center; margin-top: 5%;">
         <!-- Search Bar (searches by item name) -->
         <form action="/search" method="GET" class="search-form">
@@ -26,10 +26,10 @@
                 {% for result in results %}
                     <!-- If this is an auction, display as auction -->
                     {% if result.auction_id %}
-                        {{ auction_card(result) }}
+                        {{ auction_card(result, viewer_role, viewer_login) }}
                     <!-- Else, display as an item -->
                     {% else %}
-                        {{ item_card(result) }}
+                        {{ item_card(result, viewer_role, viewer_login) }}
                     {% endif %}
                 {% endfor %}
             </div>

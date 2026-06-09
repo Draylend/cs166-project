@@ -4,166 +4,281 @@
 {% extends "base.html" %}
 
 {% block content %}
+    {% if message %}
+        <div style="position: absolute; top: 15%; left: 50%; transform: translate(-50%, -50%);">
+            <p style="color: green; font-weight: bold; font-size: 24px;">
+                {{ message }}
+            </p>
+        </div>
+    {% elif error %}
+        <div style="position: absolute; top: 15%; left: 50%; transform: translate(-50%, -50%);">
+            <p style="color: red; font-weight: bold; font-size: 24px;">
+                {{ error }}
+            </p>
+        </div>
+    {% endif %}
     <div style="display: flex; justify-content: center; align-items: center; margin-top: 5%;">
         <div style="width: 80vw; position: relative;">
-            <hr>
-            <!-- Go Back Button -->
-            <a href="/auctions" style="text-decoration: none; color: inherit; left: 0px; display: inline-block;">
-                <div class="go-back">
-                    <i class="fa-solid fa-left-long" style="margin: 0px; font-size: 24px;"></i>
-                    <p style="margin: 0px; font-size: 20px;">Go Back</p>
-                </div>
-            </a>
-            <div style="margin-top: 15px; display: grid; grid-template-columns: 70% 1fr; gap: 15px; margin-bottom: 15px;">
-                <div>
-                    <div style="position: relative;">
-                        <div style="display: grid; grid-template-columns: 30% 1fr; gap: 25px;">
-                            <div style="display: flex; justify-content: center;">
-                                <!-- If there's an image -->
-                                {% if auction.image_url %}
-                                    <img src="{{ auction.image_url }}" style="width: 100%; max-width: 100%; height: auto; border-radius: 10px;"></img>
-                                {% else %}
-                                    <p style="display: flex; justify-content: center; align-items: center; background-color: rgb(221, 221, 221); border-radius: 10px; min-width: 15vw; min-height: 15vw; padding: 15px;">No Image Available</p>
-                                {% endif %}
-                            </div>
-                            <div style="position: relative;">
-                                <div style="position: relative; display: grid; grid-template-columns: 80% 1fr; gap: 5px;">
-                                    <p style="font-size: 32px; margin: 0px;">{{ auction.item_name }}</p>
-                                    <div style="position: absolute; top: 0px; right: 0; text-align: right;">
-                                        {% if auction.time_left %}
-                                            <p style="font-size: 20px; margin: 0px;"><b>{{ auction.time_left }}</b></p>
+            <form action="/update_auction" method="POST">
+                <input type="hidden"
+                    name="auction_id"
+                    value="{{ auction.auction_id }}">
+                <input type="hidden"
+                    name="item_id"
+                    value="{{ auction.item_id }}">
+                <hr>
+                <!-- Go Back Button -->
+                <a href="/auctions" style="text-decoration: none; color: inherit; left: 0px; display: inline-block;">
+                    <div class="go-back">
+                        <i class="fa-solid fa-left-long" style="margin: 0px; font-size: 24px;"></i>
+                        <p style="margin: 0px; font-size: 20px;">Go Back</p>
+                    </div>
+                </a>
+                {% if auction.auction_status == 'Active' and viewer_role == 'Seller' and viewer_login == auction.seller_login %}
+                    <div style="position: absolute; right: 0; top: 15px;">
+                        <button type="submit" class="button-blue" style="display: inline-flex; align-items: center; width: fit-content; gap: 10px;">
+                            Save Changes
+                        </button>
+                    </div>
+                {% endif %}
+                <div style="margin-top: 25px; display: grid; grid-template-columns: 70% 1fr; gap: 15px; margin-bottom: 15px;">
+                    <div>
+                        <div style="position: relative;">
+                            <div style="display: grid; grid-template-columns: 30% 1fr; gap: 25px;">
+                                <div>
+                                    <div style="display: flex; justify-content: center;">
+                                        <!-- If there's an image -->
+                                        {% if auction.image_url %}
+                                            <img src="{{ auction.image_url }}" style="width: 100%; max-width: 100%; height: auto; border-radius: 10px;"></img>
+                                        {% else %}
+                                            <p style="display: flex; justify-content: center; align-items: center; background-color: rgb(221, 221, 221); border-radius: 10px; min-width: 15vw; min-height: 15vw; padding: 15px;">No Image Available</p>
                                         {% endif %}
-                                        <p style="font-size: 12px; margin: 0px;">Created on {{ auction.readable_start }}</p>
-                                        <p style="font-size: 12px; margin: 0px;">Ends by {{ auction.readable_end }}</p>
                                     </div>
+                                    {% if auction.auction_status == 'Active' and viewer_role == 'Seller' and viewer_login == auction.seller_login %}
+                                        <div class="edit-group">
+                                            <i class="fa-solid fa-pen-to-square"></i>
+                                            <input type="text"
+                                                name="image_url"
+                                                value="{{ auction.image_url }}"
+                                                class="edit-input" style="font-size: 14px; width: 100%;">
+                                        </div>
+                                    {% endif %}
                                 </div>
-
-                                <!-- Change color based on auction status -->
-                                {% if auction.auction_status == "Active" %}
-                                    <span style="font-size: 20px; margin: 0px; background-color: rgb(149, 255, 144); border-radius: 10px; padding-left: 10px; padding-right: 10px;">{{ auction.auction_status }}</span>
-                                {% else %}
-                                    <span style="font-size: 20px; margin: 0px; background-color: rgb(255, 144, 144); border-radius: 10px; padding-left: 10px; padding-right: 10px;">{{ auction.auction_status }}</span>
-                                {% endif %}
-                                
-                                <!-- Chance price based on color to show user urgency -->
-                                <p style="margin-top: 15px; margin-bottom: 0px;">Current Highest Bid</p>
-                                {% if auction.current_highest_bid == 0 %}
-                                    <p style="font-size: 32px; font-weight: bold; margin: 0px; color: rgb(12, 207, 54);">${{ auction.current_highest_bid }}</p>
-                                {% elif auction.current_highest_bid > 0 and auction.current_highest_bid < auction.high_threshold %}
-                                    <p style="font-size: 32px; font-weight: bold; margin: 0px; color: rgb(16, 129, 235);">${{ auction.current_highest_bid }}</p>
-                                {% else %}
-                                    <div style="display: flex; align-items: center;">
-                                        <p style="font-size: 32px; font-weight: bold; margin: 0px; color: rgb(236, 46, 40);">${{ auction.current_highest_bid }}</p>
-                                        <span style="background-color: rgb(255, 68, 0); color: yellow; margin: 0px; border-radius: 15px; padding-left: 10px; padding-right: 10px; font-weight: bold; margin-left: 10px;">HOT</span>
+                                <div style="position: relative;">
+                                    <div style="position: relative; display: grid; grid-template-columns: 60% 1fr; gap: 5px;">
+                                        <div class="field-row">
+                                            {% if auction.auction_status == 'Active' and viewer_role == 'Seller' and viewer_login == auction.seller_login %}
+                                                <div class="edit-group">
+                                                    <i class="fa-solid fa-pen-to-square"></i>
+                                                    <input type="text"
+                                                        name="item_name"
+                                                        value="{{ auction.item_name }}"
+                                                        class="edit-input">
+                                                </div>
+                                            {% else %}
+                                                <div class="display-text">
+                                                    {{ auction.item_name }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <div style="position: absolute; top: 0px; right: 0; text-align: right;">
+                                            {% if auction.time_left %}
+                                                <p style="font-size: 20px; margin: 0px;"><b>{{ auction.time_left }}</b></p>
+                                            {% endif %}
+                                            <p style="font-size: 12px; margin: 0px;">Created on {{ auction.readable_start }}</p>
+                                            <div class="field-row">
+                                                {% if auction.auction_status == 'Active' and viewer_role == 'Seller' and viewer_login == auction.seller_login %}
+                                                    <div class="edit-group">
+                                                        <i class="fa-solid fa-pen-to-square"></i>
+                                                        <input type="datetime-local"
+                                                            name="end_time"
+                                                            value="{{ auction.end_time }}"
+                                                            class="edit-input"
+                                                            style="font-size: 12px; width: 160px;">
+                                                    </div>
+                                                {% else %}
+                                                    <p style="font-size: 12px; margin: 0px;">Ends by {{ auction.readable_end }}</p>
+                                                {% endif %}
+                                            </div>
+                                        </div>
                                     </div>
-                                {% endif %}
 
-                                <!-- If a bid has been placed, show highest bid -->
-                                {% if highest_bid %}
-                                    <div style="font-size: 16px;">
-                                        by
-                                        <a href="/profile/{{ highest_bid.buyer_login }}" class="user">
-                                            <b>{{ highest_bid.buyer_login }}</b>
-                                        </a>
-                                        on {{ highest_bid.readable_timestamp }}
-                                    </div>
-                                {% else %}
-                                    <p>No bids yet</p>
-                                {% endif %}
+                                    <!-- Change color based on auction status -->
+                                    {% if auction.auction_status == "Active" %}
+                                        <span style="font-size: 20px; margin: 0px; background-color: rgb(149, 255, 144); border-radius: 10px; padding-left: 10px; padding-right: 10px;">{{ auction.auction_status }}</span>
+                                    {% else %}
+                                        <span style="font-size: 20px; margin: 0px; background-color: rgb(255, 144, 144); border-radius: 10px; padding-left: 10px; padding-right: 10px;">{{ auction.auction_status }}</span>
+                                    {% endif %}
+                                    
+                                    <!-- Chance price based on color to show user urgency -->
+                                    <p style="margin-top: 15px; margin-bottom: 0px;">Current Highest Bid</p>
+                                    {% if auction.current_highest_bid == 0 %}
+                                        <p style="font-size: 32px; font-weight: bold; margin: 0px; color: rgb(12, 207, 54);">${{ auction.current_highest_bid }}</p>
+                                    {% elif auction.current_highest_bid > 0 and auction.current_highest_bid < auction.high_threshold %}
+                                        <p style="font-size: 32px; font-weight: bold; margin: 0px; color: rgb(16, 129, 235);">${{ auction.current_highest_bid }}</p>
+                                    {% else %}
+                                        <div style="display: flex; align-items: center;">
+                                            <p style="font-size: 32px; font-weight: bold; margin: 0px; color: rgb(236, 46, 40);">${{ auction.current_highest_bid }}</p>
+                                            <span style="background-color: rgb(255, 68, 0); color: yellow; margin: 0px; border-radius: 15px; padding-left: 10px; padding-right: 10px; font-weight: bold; margin-left: 10px;">HOT</span>
+                                        </div>
+                                    {% endif %}
 
-                                <!-- If auction has a winner -->
-                                {% if auction.winner_login %}
-                                    <div style="display: flex; align-items: center; gap: 5px; font-size: 20px; margin-top: 15px;">
-                                        <span><b>Winner:</b></span>
+                                    <!-- If a bid has been placed, show highest bid -->
+                                    {% if highest_bid %}
+                                        <div style="font-size: 16px;">
+                                            by
+                                            <a href="/profile/{{ highest_bid.buyer_login }}" class="user">
+                                                <b>{{ highest_bid.buyer_login }}</b>
+                                            </a>
+                                            on {{ highest_bid.readable_timestamp }}
+                                        </div>
+                                    {% else %}
+                                        <p>No bids yet</p>
+                                    {% endif %}
 
-                                        <a href="/profile/{{ auction.winner_login }}" class="user">
-                                            <b>{{ auction.winner_login }}</b>
-                                        </a>
-                                    </div>
-                                {% endif %}
+                                    <!-- If auction has a winner -->
+                                    {% if auction.winner_login %}
+                                        <div style="display: flex; align-items: center; gap: 5px; font-size: 20px; margin-top: 15px;">
+                                            <span><b>Winner:</b></span>
 
-                                <!-- Add Bidding -->
-                                {% if auction.auction_status == 'Active' and viewer_role == 'Buyer' %}
-                                    <div style="position: absolute; right: 0px; bottom: 0px; text-align: right;">
-                                        {% if error %}
-                                            <p style="margin: 0px; color: red;">{{ error }}</p>
-                                        {% endif %}
-                                        <form action="/add_bid" method="POST">
-                                            <input type="hidden" name="auction_id" value="{{ auction.auction_id }}">
-                                            <label style="font-size: 20px;">Bid: $</label>
-                                            <input type="number" name="bid" placeholder="0" required>
-                                            <button type="submit">Submit</button>
-                                        </form>
-                                    </div>
-                                {% endif %}
+                                            <a href="/profile/{{ auction.winner_login }}" class="user">
+                                                <b>{{ auction.winner_login }}</b>
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
                     </div>
+                    <!-- Bidding Table History -->
+                    <div>
+                        <table class="bid-table">
+                            <thead>
+                                <tr>
+                                    <th>Bidder</th>
+                                    <th>Amount</th>
+                                    <th>Timestamp</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {% for bid in bids[:3] %}
+                                <tr>
+                                    <td>
+                                        <a href="/profile/{{ bid.buyer_login }}" class="user">
+                                            {{ bid.buyer_login }}
+                                        </a>
+                                    </td>
+                                    <td>${{ bid.bid_amount }}</td>
+                                    <td>{{ bid.readable_timestamp }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+
+                        {% if bids|length > 3 %}
+                            <details>
+                                <summary>Show {{ bids|length - 3 }} more bids</summary>
+
+                                <table class="bid-table">
+                                    <tbody>
+                                        {% for bid in bids[3:] %}
+                                        <tr>
+                                            <td>
+                                                <a href="/profile/{{ bid.buyer_login }}" class="user">
+                                                    {{ bid.buyer_login }}
+                                                </a>
+                                            </td>
+                                            <td>${{ bid.bid_amount }}</td>
+                                            <td>{{ bid.readable_timestamp }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </details>
+                        {% endif %}
+                    </div>
                 </div>
-                <!-- Bidding Table History -->
-                <div>
-                    <table class="bid-table">
-                        <thead>
-                            <tr>
-                                <th>Bidder</th>
-                                <th>Amount</th>
-                                <th>Timestamp</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            {% for bid in bids[:3] %}
-                            <tr>
-                                <td>
-                                    <a href="/profile/{{ bid.buyer_login }}" class="user">
-                                        {{ bid.buyer_login }}
-                                    </a>
-                                </td>
-                                <td>${{ bid.bid_amount }}</td>
-                                <td>{{ bid.readable_timestamp }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-
-                    {% if bids|length > 3 %}
-                        <details>
-                            <summary>Show {{ bids|length - 3 }} more bids</summary>
-
-                            <table class="bid-table">
-                                <tbody>
-                                    {% for bid in bids[3:] %}
-                                    <tr>
-                                        <td>
-                                            <a href="/profile/{{ bid.buyer_login }}" class="user">
-                                                {{ bid.buyer_login }}
-                                            </a>
-                                        </td>
-                                        <td>${{ bid.bid_amount }}</td>
-                                        <td>{{ bid.readable_timestamp }}</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </details>
+                <hr>
+                <!-- Display item info -->
+                <div style="display: flex; align-items: center; gap: 5px; color: rgb(112, 112, 112); margin-top: 10px;">
+                    <div class="field-row">
+                        {% if auction.auction_status == 'Active' and viewer_role == 'Seller' and viewer_login == auction.seller_login %}
+                            <div class="edit-group">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                                <input type="text"
+                                    name="item_condition"
+                                    value="{{ auction.item_condition }}"
+                                    class="edit-input"
+                                    style="font-size: 20px; width: 100px;">
+                            </div>
+                        {% else %}
+                            <p style="font-size: 20px; margin: 0px;">{{ auction.item_condition }}</p>
+                        {% endif %}
+                    </div>
+                    <p style="font-size: 20px; margin: 0px;">•</p>
+                    <div class="field-row">
+                        {% if auction.auction_status == 'Active' and viewer_role == 'Seller' and viewer_login == auction.seller_login %}
+                            <div class="edit-group">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                                <input type="text"
+                                    name="category"
+                                    value="{{ auction.category }}"
+                                    class="edit-input"
+                                    style="font-size: 20px; width: 100px;">
+                            </div>
+                        {% else %}
+                            <p style="font-size: 20px; margin: 0px;">{{ auction.category }}</p> 
+                        {% endif %}
+                    </div>
+                </div>
+                {% if auction.auction_status == 'Active' and viewer_role == 'Seller' and viewer_login == auction.seller_login %}
+                    <div class="edit-group">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                        <input type="text"
+                            name="description"
+                            value="{{ auction.description }}"
+                            class="edit-input"
+                            style="font-size: 16px; width: 250px;">
+                    </div>
+                {% else %}
+                    <p style="font-size: 16px; margin: 0px;">{{ auction.description }}</p>
+                {% endif %}
+                {% if auction.auction_status == 'Active' and viewer_role == 'Seller' and viewer_login == auction.seller_login %}
+                    <div class="edit-group">
+                        <p style="font-size: 24px; font-weight: bold; margin-top: 10px; margin-bottom: 0px;">Original Asking Price: $</p>
+                        <i class="fa-solid fa-pen-to-square"></i>
+                        <input type="number"
+                            name="starting_price"
+                            value="{{ auction.starting_price }}"
+                            class="edit-input"
+                            style="font-size: 24px; width: 100px; font-weight: bold;">
+                    </div>
+                {% else %}
+                    <p style="font-size: 24px; font-weight: bold; margin-top: 10px; margin-bottom: 0px;">Original Asking Price: ${{ auction.starting_price }}</p>
+                {% endif %}
+                <div style="font-size: 20px; margin-top: 10px; margin-bottom: 5px;">
+                    sold by
+                    <a href="/profile/{{ auction.seller_login }}" class="user">
+                        <b>{{ auction.seller_login }}</b>
+                    </a>
+                </div>
+            </form>
+            <!-- Add Bidding -->
+            {% if auction.auction_status == 'Active' and viewer_role == 'Buyer' %}
+                <div style="position: absolute; right: 0px; top: 75%; text-align: right;">
+                    {% if error %}
+                        <p style="margin: 0px; color: red;">{{ error }}</p>
                     {% endif %}
+                    <form action="/add_bid" method="POST">
+                        <input type="hidden" name="auction_id" value="{{ auction.auction_id }}">
+                        <label style="font-size: 20px;">Bid: $</label>
+                        <input type="number" name="bid" placeholder="0" required>
+                        <button type="submit">Submit</button>
+                    </form>
                 </div>
-            </div>
-            <hr>
-            <!-- Display item info -->
-            <div style="display: flex; align-items: center; gap: 5px; color: rgb(112, 112, 112); margin-top: 10px;">
-                <p style="font-size: 20px; margin: 0px;">{{ auction.item_condition }}</p>
-                <p style="font-size: 20px; margin: 0px;">•</p>
-                <p style="font-size: 20px; margin: 0px;">{{ auction.category }}</p> 
-            </div>
-            <p style="font-size: 16px; margin: 0px;">{{ auction.description }}</p>
-            <p style="font-size: 24px; font-weight: bold; margin-top: 10px; margin-bottom: 0px;">Original Asking Price: ${{ auction.starting_price }}</p>
-            <div style="font-size: 20px; margin-top: 10px; margin-bottom: 5px;">
-                sold by
-                <a href="/profile/{{ auction.seller_login }}" class="user">
-                    <b>{{ auction.seller_login }}</b>
-                </a>
-            </div>
+            {% elif auction.auction_status == 'Active' and viewer_role == 'Seller' and viewer_login == auction.seller_login %}
+            {% endif %}
         </div>
     </div>
 {% endblock %}

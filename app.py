@@ -214,6 +214,206 @@ def auctions():
         viewer_login=session["login"]
     )
 
+# Function for creating an Auction
+@app.route("/create_auction", methods=["POST"])
+def create_auction():
+    if "login" not in session:
+        return redirect("/login")
+
+    seller_login = session["login"]
+    seller_role = session["role"]
+
+    # Gather form data
+    item_id = request.form["item_id"]
+    end_time_str = request.form["end_time"]
+
+    # Only sellers can create auctions
+    if seller_role != "Seller":
+        return redirect(url_for("manage_items", item_id=item_id, message="", error="Only sellers can create auctions."))
+
+    # Parse datetime-local formats
+    end_time_str = request.form["end_time"]
+
+    # Accept all date formats
+    parsed = None
+    formats = [
+        "%Y-%m-%dT%H:%M",
+        "%Y-%m-%dT%H:%M:%S",
+        "%Y-%m-%dT%H:%M:%S.%f",
+    ]
+
+    for fmt in formats:
+        try:
+            parsed = datetime.strptime(end_time_str, fmt)
+            break
+        except ValueError:
+            continue
+
+    if parsed is None:
+        return redirect(url_for("manage_items", item_id=item_id, message="", error="Invalid date format."))
+
+    end_time = parsed
+
+    # Validate time range
+    now = datetime.now()
+    if end_time <= now:
+        return redirect(url_for("manage_items", item_id=item_id, message="", error="End time must be in the future."))
+
+    conn = get_db()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    # Ensure the item belongs to this seller
+    cur.execute("""
+        SELECT item_id
+        FROM item
+        WHERE item_id = %s AND seller_login = %s;
+    """, (item_id, seller_login))
+    owned = cur.fetchone()
+
+    if not owned:
+        return redirect(url_for("manage_items", item_id=item_id, message="", error="You do not own this item."))
+
+    # Ensure the item does not already have an auction
+    cur.execute("""
+        SELECT auction_id
+        FROM auction
+        WHERE item_id = %s;
+    """, (item_id,))
+    existing = cur.fetchone()
+
+    if existing:
+        return redirect(url_for("manage_items", item_id=item_id, message="", error="This item already has an auction."))
+
+    # Get next auction_id
+    cur.execute("SELECT nextval('auction_id_seq') AS next_id;")
+    next_auction_id = cur.fetchone()["next_id"]
+
+    # Insert auction
+    try:
+        cur.execute("""
+            INSERT INTO auction (
+                auction_id, item_id, seller_login, seller_role, current_highest_bid, auction_status, end_time
+            )
+            VALUES (%s, %s, %s, 'Seller', 0, 'Active', %s);
+        """, (next_auction_id, item_id, seller_login, end_time))
+
+        conn.commit()
+
+    except Exception as e:
+        conn.rollback()
+        return redirect(url_for("manage_items", item_id=item_id, message="", error="Failed to create auction."))
+
+    return redirect(url_for("manage_items", item_id=item_id, message="Auction has been successfully published.", error=""))
+
+# Function for updating an Auction
+@app.route("/update_auction", methods=["POST"])
+def update_auction():
+    if "login" not in session:
+        return redirect("/login")
+
+    seller_login = session["login"]
+    seller_role = session["role"]
+
+    # Gather identifiers
+    auction_id = request.form["auction_id"]
+    item_id = request.form["item_id"]
+
+    # Gather item fields
+    item_name = request.form["item_name"]
+    category = request.form["category"]
+    item_condition = request.form["item_condition"] or None
+    description = request.form["description"] or None
+    image_url = request.form["image_url"] or None
+    starting_price = request.form["starting_price"]
+
+    # Gather auction field
+    end_time_str = request.form["end_time"]
+
+    # Parse datetime-local formats
+    parsed = None
+    formats = [
+        "%Y-%m-%dT%H:%M",
+        "%Y-%m-%dT%H:%M:%S",
+        "%Y-%m-%dT%H:%M:%S.%f",
+    ]
+
+    for fmt in formats:
+        try:
+            parsed = datetime.strptime(end_time_str, fmt)
+            break
+        except ValueError:
+            continue
+
+    if parsed is None:
+        return redirect(url_for(
+            "view_auction",
+            auction_id=auction_id,
+            error="Invalid date format."
+        ))
+
+    end_time = parsed
+
+    # Validate end time
+    if end_time <= datetime.now():
+        return redirect(url_for(
+            "view_auction",
+            auction_id=auction_id,
+            error="End time must be in the future."
+        ))
+
+    conn = get_db()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    # Ensure seller owns this item
+    cur.execute("""
+        SELECT item_id
+        FROM item
+        WHERE item_id = %s AND seller_login = %s;
+    """, (item_id, seller_login))
+
+    if cur.fetchone() is None:
+        return redirect(url_for(
+            "view_auction",
+            auction_id=auction_id,
+            error="You don't own this item."
+        ))
+
+    try:
+        # Update item
+        cur.execute("""
+            UPDATE item
+            SET item_name = %s,
+                category = %s,
+                starting_price = %s,
+                image_url = %s,
+                item_condition = %s,
+                description = %s
+            WHERE item_id = %s;
+        """, (item_name, category, starting_price, image_url, item_condition, description, item_id))
+
+        # Update auction
+        cur.execute("""
+            UPDATE auction
+            SET end_time = %s
+            WHERE auction_id = %s;
+        """, (end_time, auction_id))
+
+        conn.commit()
+
+    except Exception as e:
+        conn.rollback()
+        return redirect(url_for(
+            "view_auction",
+            auction_id=auction_id,
+            error="Failed to update Auction."
+        ))
+
+    return redirect(url_for(
+        "view_auction",
+        auction_id=auction_id,
+        message="Auction updated successfully."
+    ))
+
 # Function for calling Items Page
 @app.route("/items")
 def items():
@@ -226,10 +426,12 @@ def items():
     # Grab cursor (selector)
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-    # Search for items whose name contains the query
+    # Search only for Items not auctioned
     cur.execute("""
-        SELECT *
-        FROM item
+        SELECT I.*
+        FROM item I
+        LEFT JOIN auction A ON I.item_id = A.item_id
+        WHERE A.item_id IS NULL;
     """)
 
     # Get all matching results
@@ -262,15 +464,30 @@ def items_seller():
     # Grab cursor (selector)
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-    # Search for items whose name contains the query
+    # Search for all items/auctions owned by this user
+    # but remove the double item/auction if an item is in an auction
     cur.execute("""
-        SELECT *
-        FROM item I, users U
-        WHERE U.login = %s AND I.seller_login = U.login;
+        SELECT 
+            I.*,
+            A.auction_id,
+            A.current_highest_bid,
+            A.auction_status,
+            A.start_time,
+            A.end_time,
+            A.winner_login,
+            A.winner_role
+        FROM item I
+        LEFT JOIN auction A ON I.item_id = A.item_id
+        WHERE I.seller_login = %s;
     """, (login,))
 
     # Get all matching results
     results = cur.fetchall()
+
+    # Add missing high_threshold for auctions
+    for row in results:
+        if row["auction_id"]:
+            row["high_threshold"] = row["starting_price"] * Decimal("1.3")
 
     # Close connection and cursor
     cur.close()
@@ -279,7 +496,7 @@ def items_seller():
     # Return results
     return render_template(
         "items.html",
-        title="Browse Items",
+        title="Your Items & Auctions",
         results=results,
         viewer_role=session["role"],
         viewer_login=session["login"]
@@ -589,10 +806,12 @@ def manage_items(item_id):
     item = cur.fetchone()
 
     message = request.args.get("message")
+    error = request.args.get("error")
     return render_template(
         "manage_items.html", 
         item=item,
         message=message,
+        error=error
     )
     
 # Function for calling ManageUsers Page
@@ -682,6 +901,8 @@ def search():
         title="Search Results",
         query=query,
         results=results,
+        viewer_role=session["role"],
+        viewer_login=session["login"]
     )
 
 # Function for viewing an Auction (bidding)
@@ -775,15 +996,18 @@ def view_auction(auction_id):
     auction["readable_end"] = readable_end
     auction["time_left"] = time_left
 
+    message = request.args.get("message")
     error = request.args.get("error")
     return render_template(
         "bid.html", 
         auction=auction, 
         bids=bids, 
         highest_bid=highest_bid, 
+        message=message,
         error=error, 
         return_url=request.referrer,
         viewer_role=session["role"],
+        viewer_login=session["login"]
     )
 
 # Function for adding a bid
