@@ -11,14 +11,14 @@ If the above doesn't work, try:
 python3 -m pip install Flask
 ```
 
-### Create Database
-```
-source createPostgreDB.sh
-```
-
 ### Start Database
 ```
 source startPostgreSQL.sh
+```
+
+### Create Database
+```
+source createPostgreDB.sh
 ```
 
 ### Load Database
