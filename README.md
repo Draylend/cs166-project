@@ -13,7 +13,7 @@ python3 -m pip install Flask
 
 ### Create Database
 ```
-source createPostgreSQL.sh
+source createPostgreDB.sh
 ```
 
 ### Start Database
@@ -24,7 +24,7 @@ source startPostgreSQL.sh
 ### Load Database
 This will create tables, indices, and load data into the database.
 ```
-loadDB.sh
+source loadDB.sh
 ```
 
 ### Running Web Interface (GUI)
