@@ -123,6 +123,6 @@ CREATE SEQUENCE bid_id_seq START 1;
 SELECT setval('bid_id_seq', (SELECT COALESCE(MAX(bid_id), 4) FROM bid));
 
 CREATE SEQUENCE payment_id_seq START 1;
-SELECT setval('bid_id_seq', (SELECT COALESCE(MAX(bid_id), 1) FROM bid));
+SELECT setval('payment_id_seq', (SELECT COALESCE(MAX(payment_id), 1) FROM payment));
 
 CREATE SEQUENCE shipment_id_seq START 1;
