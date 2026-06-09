@@ -1448,13 +1448,13 @@ def add_bid():
     if "login" not in session:
         return redirect("/login")
 
-    if session["role"] != "Buyer":
-        error = "Only Buyers are allowed to place bids."
-        return redirect(url_for("view_auction", auction_id=auction_id, error=error))
-
     bid_amount = Decimal(request.form["bid"])
     auction_id = request.form["auction_id"]
     bidder = session["login"]
+
+    if session["role"] != "Buyer":
+        error = "Only Buyers are allowed to place bids."
+        return redirect(url_for("view_auction", auction_id=auction_id, error=error))
 
     conn = get_db()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
