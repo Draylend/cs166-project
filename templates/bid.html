@@ -34,7 +34,7 @@
                         <p style="margin: 0px; font-size: 20px;">Go Back</p>
                     </div>
                 </a>
-                {% if auction.auction_status == 'Active' and viewer_role == 'Seller' and viewer_login == auction.seller_login %}
+                {% if auction.auction_status == 'Active' and ((viewer_role == 'Seller' and viewer_login == auction.seller_login) or viewer_role == 'Admin') %}
                     <div style="position: absolute; right: 0; top: 15px;">
                         <button type="submit" class="button-blue" style="display: inline-flex; align-items: center; width: fit-content; gap: 10px;">
                             Save Changes
@@ -54,7 +54,7 @@
                                             <p style="display: flex; justify-content: center; align-items: center; background-color: rgb(221, 221, 221); border-radius: 10px; min-width: 15vw; min-height: 15vw; padding: 15px;">No Image Available</p>
                                         {% endif %}
                                     </div>
-                                    {% if auction.auction_status == 'Active' and viewer_role == 'Seller' and viewer_login == auction.seller_login %}
+                                    {% if auction.auction_status == 'Active' and ((viewer_role == 'Seller' and viewer_login == auction.seller_login) or viewer_role == 'Admin') %}
                                         <div class="edit-group">
                                             <i class="fa-solid fa-pen-to-square"></i>
                                             <input type="text"
@@ -67,7 +67,7 @@
                                 <div style="position: relative;">
                                     <div style="position: relative; display: grid; grid-template-columns: 60% 1fr; gap: 5px;">
                                         <div class="field-row">
-                                            {% if auction.auction_status == 'Active' and viewer_role == 'Seller' and viewer_login == auction.seller_login %}
+                                            {% if auction.auction_status == 'Active' and ((viewer_role == 'Seller' and viewer_login == auction.seller_login) or viewer_role == 'Admin') %}
                                                 <div class="edit-group">
                                                     <i class="fa-solid fa-pen-to-square"></i>
                                                     <input type="text"
@@ -87,7 +87,7 @@
                                             {% endif %}
                                             <p style="font-size: 12px; margin: 0px;">Created on {{ auction.readable_start }}</p>
                                             <div class="field-row">
-                                                {% if auction.auction_status == 'Active' and viewer_role == 'Seller' and viewer_login == auction.seller_login %}
+                                                {% if auction.auction_status == 'Active' and ((viewer_role == 'Seller' and viewer_login == auction.seller_login) or viewer_role == 'Admin') %}
                                                     <div class="edit-group">
                                                         <i class="fa-solid fa-pen-to-square"></i>
                                                         <input type="datetime-local"
@@ -203,7 +203,7 @@
                 <!-- Display item info -->
                 <div style="display: flex; align-items: center; gap: 5px; color: rgb(112, 112, 112); margin-top: 10px;">
                     <div class="field-row">
-                        {% if auction.auction_status == 'Active' and viewer_role == 'Seller' and viewer_login == auction.seller_login %}
+                        {% if auction.auction_status == 'Active' and ((viewer_role == 'Seller' and viewer_login == auction.seller_login) or viewer_role == 'Admin') %}
                             <div class="edit-group">
                                 <i class="fa-solid fa-pen-to-square"></i>
                                 <input type="text"
@@ -218,7 +218,7 @@
                     </div>
                     <p style="font-size: 20px; margin: 0px;">•</p>
                     <div class="field-row">
-                        {% if auction.auction_status == 'Active' and viewer_role == 'Seller' and viewer_login == auction.seller_login %}
+                        {% if auction.auction_status == 'Active' and ((viewer_role == 'Seller' and viewer_login == auction.seller_login) or viewer_role == 'Admin') %}
                             <div class="edit-group">
                                 <i class="fa-solid fa-pen-to-square"></i>
                                 <input type="text"
@@ -232,7 +232,7 @@
                         {% endif %}
                     </div>
                 </div>
-                {% if auction.auction_status == 'Active' and viewer_role == 'Seller' and viewer_login == auction.seller_login %}
+                {% if auction.auction_status == 'Active' and ((viewer_role == 'Seller' and viewer_login == auction.seller_login) or viewer_role == 'Admin') %}
                     <div class="edit-group">
                         <i class="fa-solid fa-pen-to-square"></i>
                         <input type="text"
@@ -244,7 +244,7 @@
                 {% else %}
                     <p style="font-size: 16px; margin: 0px;">{{ auction.description }}</p>
                 {% endif %}
-                {% if auction.auction_status == 'Active' and viewer_role == 'Seller' and viewer_login == auction.seller_login %}
+                {% if auction.auction_status == 'Active' and ((viewer_role == 'Seller' and viewer_login == auction.seller_login) or viewer_role == 'Admin') %}
                     <div class="edit-group">
                         <p style="font-size: 24px; font-weight: bold; margin-top: 10px; margin-bottom: 0px;">Original Asking Price: $</p>
                         <i class="fa-solid fa-pen-to-square"></i>
@@ -277,7 +277,7 @@
                         <button type="submit">Submit</button>
                     </form>
                 </div>
-            {% elif (auction.auction_status == 'Active' and viewer_role == 'Seller' and viewer_login == auction.seller_login) or viewer_role == 'Admin' %}
+            {% elif auction.auction_status == 'Active' and ((viewer_role == 'Seller' and viewer_login == auction.seller_login) or viewer_role == 'Admin') %}
                 <div style="position: absolute; right: 0px; top: 75%; text-align: right;">
                     {% if error %}
                         <p style="margin: 0px; color: red;">{{ error }}</p>
@@ -294,7 +294,7 @@
                     {% if error %}
                         <p style="margin: 0px; color: red;">{{ error }}</p>
                     {% endif %}
-                    <form action="/remove_auction_seller" method="POST">
+                    <form action="/remove_auction" method="POST">
                         <input type="hidden" name="auction_id" value="{{ auction.auction_id }}">
                         <input type="hidden" name="item_id" value="{{ auction.item_id }}">
                         <button type="submit" class="button-red" style="display: inline-flex; align-items: center; width: fit-content; gap: 10px;">

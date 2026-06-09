@@ -30,6 +30,13 @@
 }
 
 .shipment-card-header {
+    background-color: #f8ffb9; 
+    height: 10px; 
+    border-radius: 15px 15px 0px 0px;
+    margin: 0px;
+}
+
+.user-card-header {
     background-color: #b9ffcc; 
     height: 10px; 
     border-radius: 15px 15px 0px 0px;
@@ -246,6 +253,15 @@
 
 .plus:hover {
     color: #0148c2;
+    transform: scale(1.5);
+}
+
+.x {
+    transition: all 0.2s ease;
+}
+
+.x:hover {
+    color: red;
     transform: scale(1.5);
 }
 

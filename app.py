@@ -5,6 +5,9 @@ from database import get_db
 from decimal import Decimal
 from datetime import datetime   # Converting CSV timestamp into readable format
 
+import random
+import string                   # For generating randomized tracking number
+
 import psycopg2
 import psycopg2.extras
 
@@ -306,8 +309,8 @@ def create_auction():
     return redirect(url_for("manage_items", item_id=item_id, message="Auction has been successfully published.", error=""))
 
 # Function for removing an Auction
-@app.route("/remove_auction_seller", methods=["POST"])
-def remove_auction_seller():
+@app.route("/remove_auction", methods=["POST"])
+def remove_auction():
     if "login" not in session:
         return redirect("/login")
 
@@ -317,22 +320,26 @@ def remove_auction_seller():
     auction_id = request.form["auction_id"]
     item_id = request.form["item_id"]
 
-    # Only sellers can remove auctions
-    if seller_role != "Seller":
-        return redirect(url_for("manage_items", item_id=item_id, error="Only sellers can remove auctions."))
+    # Sellers or Admins can remove auctions
+    if seller_role not in ("Seller", "Admin"):
+        return redirect(url_for("manage_items", item_id=item_id,
+                                error="Only sellers or admins can remove auctions."))
 
     conn = get_db()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-    # Ensure the seller owns this auction
-    cur.execute("""
-        SELECT auction_id
-        FROM auction
-        WHERE auction_id = %s AND seller_login = %s;
-    """, (auction_id, seller_login))
+    # Ownership check for sellers
+    if seller_role == "Seller":
+        cur.execute("""
+            SELECT auction_id
+            FROM auction
+            WHERE auction_id = %s AND seller_login = %s;
+        """, (auction_id, seller_login))
 
-    if cur.fetchone() is None:
-        return redirect(url_for("manage_items", item_id=item_id, error="You do not own this auction."))
+        if cur.fetchone() is None:
+            return redirect(url_for("manage_items", item_id=item_id, error="You do not own this auction."))
+
+    # Admins skip ownership check entirely
 
     try:
         # Delete the auction
@@ -760,8 +767,8 @@ def update_item():
     ))
 
 # Function for removing an Item
-@app.route("/remove_item_seller", methods=["POST"])
-def remove_item_seller():
+@app.route("/remove_item", methods=["POST"])
+def remove_item():
     if "login" not in session:
         return redirect("/login")
 
@@ -771,21 +778,23 @@ def remove_item_seller():
     item_id = request.form["item_id"]
 
     # Only sellers can remove items
-    if seller_role != "Seller":
-        return redirect(url_for("manage_items", item_id=item_id, error="Only sellers can remove items."))
+    if seller_role not in ("Seller", "Admin"):
+        return redirect(url_for("manage_items", item_id=item_id, error="Only sellers or admins can remove items."))
 
     conn = get_db()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     # Execute query for this sellers item
-    cur.execute("""
-        SELECT item_id
-        FROM item
-        WHERE item_id = %s AND seller_login = %s;
-    """, (item_id, seller_login))
+    # Only enforce ownership for sellers, not admins
+    if seller_role == "Seller":
+        cur.execute("""
+            SELECT item_id
+            FROM item
+            WHERE item_id = %s AND seller_login = %s;
+        """, (item_id, seller_login))
 
-    if cur.fetchone() is None:
-        return redirect(url_for("manage_items", item_id=item_id, error="You do not own this item."))
+        if cur.fetchone() is None:
+            return redirect(url_for("manage_items", item_id=item_id, error="You do not own this item."))
 
     # Double-check: Item not in an auction
     cur.execute("""
@@ -969,6 +978,54 @@ def update_profile():
             message="",
             error=error_msg
         ))
+
+# Function for removing user
+@app.route("/remove_user/<login>", methods=["POST"])
+def remove_user(login):
+    if "login" not in session or session["role"] != "Admin":
+        return redirect("/")
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    # Check if user exists
+    cur.execute("SELECT role FROM users WHERE login = %s;", (login,))
+    row = cur.fetchone()
+
+    if not row:
+        return redirect(url_for("manageUsers", error="User does not exist.", message=""))
+
+    role = row[0]
+
+    # Check blocking dependencies
+    # Seller dependencies
+    if role == "Seller":
+        cur.execute("SELECT 1 FROM item WHERE seller_login = %s;", (login,))
+        if cur.fetchone():
+            return redirect(url_for("manageUsers", error="Cannot delete seller with items.", message=""))
+
+        cur.execute("SELECT 1 FROM auction WHERE seller_login = %s;", (login,))
+        if cur.fetchone():
+            return redirect(url_for("manageUsers", error="Cannot delete seller with auctions.", message=""))
+
+    # Buyer dependencies
+    if role == "Buyer":
+        cur.execute("SELECT 1 FROM bid WHERE buyer_login = %s;", (login,))
+        if cur.fetchone():
+            return redirect(url_for("manageUsers", error="Cannot delete buyer with bids.", message=""))
+
+        cur.execute("SELECT 1 FROM payment WHERE buyer_login = %s;", (login,))
+        if cur.fetchone():
+            return redirect(url_for("manageUsers", error="Cannot delete buyer with payments.", message=""))
+
+    # If safe to delete, delete the user
+    cur.execute("DELETE FROM users WHERE login = %s;", (login,))
+    conn.commit()
+
+    cur.close()
+    conn.close()
+
+    return redirect(url_for("manage_users", message="User removed successfully.", error=""))
     
 # Function for calling Payments Page
 @app.route("/payments")
@@ -1015,7 +1072,7 @@ def pay():
     conn = get_db()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-    # Execute query to update payment status
+    # Update payment status and get auction_id
     cur.execute("""
         UPDATE payment
         SET payment_status = 'Completed'
@@ -1025,7 +1082,7 @@ def pay():
 
     row = cur.fetchone()
 
-    # If no row returned then payment doesn't belong to this user
+    # If payment doesn't exist
     if not row:
         conn.commit()
         cur.close()
@@ -1034,11 +1091,22 @@ def pay():
 
     auction_id = row["auction_id"]
 
-    # Add shipment upon successful payment
+    # Get buyer address
     cur.execute("""
-        INSERT INTO shipment (auction_id, shipment_status)
-        VALUES (%s, 'Pending');
-    """, (auction_id,))
+        SELECT address
+        FROM users
+        WHERE login = %s;
+    """, (buyer_login,))
+    user_row = cur.fetchone()
+
+    # Generate random tracking number
+    tracking_number = "TRK-" + ''.join(random.choices(string.ascii_uppercase + string.digits, k=12))
+
+    # Insert shipment using sequence
+    cur.execute("""
+        INSERT INTO shipment (shipment_id, auction_id, address, shipment_status, tracking_number)
+        VALUES (nextval('shipment_id_seq'), %s, %s, 'Pending', %s);
+    """, (auction_id, user_row["address"], tracking_number))
 
     conn.commit()
     cur.close()
@@ -1078,7 +1146,6 @@ def shipments():
         results=results
     )
 
-# Function for calling ManageItems Page
 @app.route("/manage_items/<int:item_id>")
 def manage_items(item_id):
     # Make sure user is logged in
@@ -1087,34 +1154,77 @@ def manage_items(item_id):
 
     # Grab user
     username = session["login"]
+    role = session["role"]
 
     # Get database information (connection)
     conn = get_db()
     # Grab cursor (selector)
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-    # Get item info for this item
-    cur.execute("""
-        SELECT I.*
-        FROM item I
-        JOIN users U ON I.seller_login = U.login
-        WHERE U.login = %s AND I.item_id = %s;
-    """, (username, item_id))
+    # If Seller, they must own the item
+    if role == "Seller":
+        cur.execute("""
+            SELECT I.*
+            FROM item I
+            WHERE I.item_id = %s AND I.seller_login = %s;
+        """, (item_id, username))
+
+    # If Admin, view any item
+    else:
+        cur.execute("""
+            SELECT I.*
+            FROM item I
+            WHERE I.item_id = %s;
+        """, (item_id,))
+
     item = cur.fetchone()
 
     message = request.args.get("message")
     error = request.args.get("error")
+
     return render_template(
-        "manage_items.html", 
+        "manage_items.html",
         item=item,
         message=message,
         error=error
     )
+
     
 # Function for calling ManageUsers Page
 @app.route("/manage_users")
 def manageUsers():
-    return render_template("manage_users.html", title="Manage Users")
+    if "login" not in session:
+        return redirect("/login")
+
+    # Only admins should access this page
+    if session["role"] != "Admin":
+        return redirect("/")
+
+    conn = get_db()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    # Grab all users
+    cur.execute("""
+        SELECT *
+        FROM users
+        ORDER BY login ASC;
+    """)
+
+    users = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    error = request.args.get("error")
+    message = request.args.get("message")
+    return render_template(
+        "manage_users.html",
+        title="Manage Users",
+        results=users,
+        viewer_login=session["login"],
+        message=message,
+        error=error
+    )
 
 # Function for searching indexes of items
 @app.route("/search", methods=["GET"]) # Query is added to URL itself and not body 

@@ -4,5 +4,45 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <div>Manage User Page</div>
+    {% if message %}
+        <div style="position: absolute; top: 15%; left: 50%; transform: translate(-50%, -50%);">
+            <p style="color: green; font-weight: bold; font-size: 24px;">
+                {{ message }}
+            </p>
+        </div>
+    {% elif error %}
+        <div style="position: absolute; top: 15%; left: 50%; transform: translate(-50%, -50%);">
+            <p style="color: red; font-weight: bold; font-size: 24px;">
+                {{ error }}
+            </p>
+        </div>
+    {% endif %}
+    {% if results %}
+        <div class="grid" style="margin-top: 5%;">
+        <!-- Display all results in a grid -->
+        {% for result in results %}
+            <div class="full-card">
+                <div class="user-card-header"></div>
+                <div class="card">
+                    <div style="display: flex; font-size: 32px; gap: 15px;">
+                        <a href="/profile/{{ result.login }}" class="user">
+                            <b>{{  result.login }}</b>
+                        </a>
+                        {% if viewer_login != result.login %}
+                            <form action="/remove_user/{{ result.login }}" method="POST" style="display:inline;">
+                                <input type="hidden" name="login" value="{{ result.login }}">
+
+                                <button type="submit" style="border:none; background:none; cursor:pointer; font-size: 30px;">
+                                    <i class="fa-solid fa-xmark x"></i>
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <h2 style="display: flex; justify-content: center;">No users found.</h2>
+    {% endif %}
 {% endblock %}
